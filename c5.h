@@ -16,7 +16,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION   240805
+#define VERSION   20240830
 
 #ifdef IS_PC
     #define MAX_CODE    0x00FFFF
