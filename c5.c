@@ -9,7 +9,6 @@
 #define L2            lstk[lsp-2]
 
 struct {
-	cell vectors[32];
 	byte code[MAX_CODE+1];
 	byte vars[MAX_VARS+1];
 	byte dict[MAX_DICT+1];
@@ -29,7 +28,6 @@ cell a;
 #define USER_PRIMS
 
 #define PRIMS \
-	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(CCOM,    "c,",        0, t=pop(); ccomma(t); ) \
 	X(WCOM,    "w,",        0, t=pop(); wcomma(t); ) \
 	X(LCOM,    ",",         0, t=pop(); comma(t); ) \
@@ -50,6 +48,7 @@ cell a;
 	X(SLMOD,   "/mod",      0, t=TOS; n = NOS; TOS = n/t; NOS = n%t; ) \
 	X(INCR,    "1+",        0, ++TOS; ) \
 	X(DECR,    "1-",        0, --TOS; ) \
+	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
@@ -84,6 +83,10 @@ cell a;
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
+	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
+	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
+	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
+	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
 	X(FLUSH,   "flush",     0, saveBlocks(); ) \
 	SYS_PRIMS USER_PRIMS \
 	X(BYE,     "bye",       0, doBye(); )
@@ -298,29 +301,36 @@ void baseSys() {
 	defNum("(lit2)",   LIT2);
 	defNum("(lit4)",   LIT4);
 	defNum("(exit)",   EXIT);
+	defNum("(ztype)",  ZTYPE);
 
 	defNum("(dsp)",  (cell)&dsp);
+	defNum("dstk",   (cell)&dstk[0]);
 	defNum("(rsp)",  (cell)&rsp);
+	defNum("rstk",   (cell)&rstk[0]);
 	defNum("(tsp)",  (cell)&tsp);
+	defNum("tstk",   (cell)&tstk[0]);
 	defNum("(lsp)",  (cell)&lsp);
+	defNum("lstk",   (cell)&lstk[0]);
 	defNum("(ha)",   (cell)&here);
+	defNum("(vha)",  (cell)&vhere);
 	defNum("(la)",   (cell)&last);
 	defNum("base",   (cell)&base);
 	defNum("state",  (cell)&state);
 
-	defNum("vectors",     (cell)&mem.vectors[0]);
 	defNum("code",        (cell)&mem.code[0]);
 	defNum("vars",        (cell)&mem.vars[0]);
 	defNum("dict",        (cell)&mem.dict[0]);
 	defNum("blocks",      (cell)&mem.blocks[0]);
 	defNum(">in",         (cell)&toIn);
-	defNum("(vhere)",     (cell)&vhere);
 	defNum("(output-fp)", (cell)&outputFp);
-	defNum("dstk",        (cell)&dstk[0]);
-	defNum("rstk",        (cell)&rstk[0]);
-	defNum("tstk",        (cell)&tstk[0]);
 
+	defNum("code-sz", MAX_CODE+1);
+	defNum("vars-sz", MAX_VARS+1);
+	defNum("dict-sz", MAX_DICT+1);
+	defNum("disk-sz", BLOCK_SZ*(MAX_BLOCKNUM+1));
 	defNum("stk-sz",  STK_SZ+1);
+	defNum("tstk-sz", TSTK_SZ+1);
+	defNum("lstk-sz", LSTK_SZ+1);
 	defNum("cell",    CELL_SZ);
 	for (int i = 0; prims[i].name; i++) {
 		PRIM_T* p = &prims[i];

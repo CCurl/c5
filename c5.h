@@ -21,7 +21,7 @@
 #ifdef IS_PC
     #define MAX_CODE    0x00FFFF
     #define MAX_VARS    0x0FFFFF
-    #define MAX_DICT    0x007FFF
+    #define MAX_DICT    0x03FFFF
     #define STK_SZ            63
     #define LSTK_SZ           60
     #define TSTK_SZ           63

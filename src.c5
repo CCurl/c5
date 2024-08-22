@@ -1,5 +1,6 @@
-: here (ha) @ ;
-: last (la) @ ;
+: here  (ha) @ ;
+: vhere (vha) @ ;
+: last  (la) @ ;
 : immediate 1 last cell + c! ;
 : inline    2 last cell + c! ;
 
@@ -13,14 +14,35 @@
 : if (jmpz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
-: ( a@  >t >in @ a! begin @a 0= @a+ ')' = or if a@ >in ! t> a! exit then again ; immediate
+: a>  a@ >t ; inline
+: >a  t> a! ; inline
 
+: (  a> >in @ a! 
+   begin
+      @a+ ')' = if  a@ >in !  >a  exit  then 
+   again ; immediate
+
+: t@+ t@ dup 1+ t! ; inline
+: tdrop t> drop ; inline
+
+: (quote) a>  (lit4) c, vhere dup , >t  >in @ 1+ a! 
+   begin
+      @a '"' =
+      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  >a  exit  then
+      @a+ t@+ c! 
+   again ;
+
+: "  (quote) ; immediate
+: ." (quote) (ztype) c, ; immediate
+
+: bl 32 ; inline
 : cr 13 emit 10 emit ; inline
-: space 32 emit ; inline
+: space bl emit ; inline
 
 : <# last 32 - >t 0 t@ c! ;
 : #c t@ 1- dup t! c! ;
 : #n '0' + dup '9' > if 7 + then #c ;
+: #. '.' #c ;
 : # base @ /mod swap #n ;
 : #s begin # -while drop ;
 : #> t> ;
@@ -28,18 +50,17 @@
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
 
-: hex. ( n-- ) base @ >t 16 base ! .2 t> base ! ;
-: dec. ( n-- ) base @ >t 10 base ! .3 t> base ! ;
-: bin. ( n-- ) base @ >t  2 base ! .  t> base ! ;
+: .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
+.ver
 
 ( temp for testing )
-27 . cr
-last . last hex. last bin. cr
-version . cr
-cr
+: .h ( n-- ) base @ >t 16 base ! .2 t> base ! ;
+: .d ( n-- ) base @ >t 10 base ! .3 t> base ! ;
+: .b ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
-: dump    ( f t-- ) a@ >r >t a! begin @a+    . a@ t@ > until t> drop r> a! ;
-: hexdump ( f t-- ) a@ >r >t a! begin @a+ hex. a@ t@ > until t> drop r> a! ;
+: dump    ( f t-- ) a> >t a! begin @a+ .  a@ t@ > until tdrop >a ;
+: hexdump ( f t-- ) a> >t a! begin @a+ .h a@ t@ > until tdrop >a ;
 
 : mil 1000 dup * * ;
-: bm timer swap for next timer swap - . ;
+: elapsed timer swap - . ." usec" ;
+: bm timer swap for next elapsed ;
