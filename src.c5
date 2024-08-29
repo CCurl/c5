@@ -14,21 +14,21 @@
 : if (jmpz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
-: a>  a@ >t ; inline
-: >a  t> a! ; inline
-
-: (  a> >in @ a! 
-   begin
-      @a+ ')' = if  a@ >in !  >a  exit  then 
-   again ; immediate
-
-: t@+ t@ dup 1+ t! ; inline
+: a+ a@ 1+ a! ; inline
+: a>t  a@ >t ; inline
+: t>a  t> a! ; inline
 : tdrop t> drop ; inline
 
-: (quote) a>  (lit4) c, vhere dup , >t  >in @ 1+ a! 
+: (  a>t >in @ a! 
+   begin
+      @a+ ')' = if  a@ >in !  t>a  exit  then 
+   again ; immediate
+
+
+: (quote) a>t  (lit4) c, vhere dup , >t  >in @ 1+ a! 
    begin
       @a '"' =
-      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  >a  exit  then
+      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  t>a  exit  then
       @a+ t@+ c! 
    again ;
 
@@ -36,19 +36,37 @@
 : ." (quote) (ztype) c, ; immediate
 
 : bl 32 ; inline
+: tab 9 emit ; inline
 : cr 13 emit 10 emit ; inline
 : space bl emit ; inline
+: negate com 1+ ; inline
 
-: <# last 32 - >t 0 t@ c! ;
+: #neg a>t 0 a! dup 0 < if negate a+ then ;
 : #c t@ 1- dup t! c! ;
 : #n '0' + dup '9' > if 7 + then #c ;
+: <# #neg last 32 - >t 0 t@ c! ;
 : #. '.' #c ;
 : # base @ /mod swap #n ;
 : #s begin # -while drop ;
-: #> t> ;
+: #> a@ if '-' #c then t> t>a ;
 : .  ( n-- ) <# #s #> ztype space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
+
+: 2+ 1+ 1+ ; inline
+: mod /mod drop ; inline
+
+: dict-end dict dict-sz + 1- ;
+: de>xt    @ ;
+: de>flags cell + c@ ;
+: de>len   cell + 1+ c@ ;
+: de>name  cell + 2+ ;
+: .de-word de>name ztype t@+ 10 mod 0= if cr exit then tab ;
+: words a>t last a! 1 >t begin
+    a@ .de-word a@ de-sz + a!
+    a@ dict-end < while '(' emit t> 1- . ." words)" t>a ;
+
+
 
 : .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
 .ver
@@ -58,8 +76,8 @@
 : .d ( n-- ) base @ >t 10 base ! .3 t> base ! ;
 : .b ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
-: dump    ( f t-- ) a> >t a! begin @a+ .  a@ t@ > until tdrop >a ;
-: hexdump ( f t-- ) a> >t a! begin @a+ .h a@ t@ > until tdrop >a ;
+: dump    ( f t-- ) a>t >t a! begin @a+ .  a@ t@ > until tdrop t>a ;
+: hexdump ( f t-- ) a>t >t a! begin @a+ .h a@ t@ > until tdrop t>a ;
 
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
