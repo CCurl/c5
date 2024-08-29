@@ -22,7 +22,7 @@ cell lsp, lstk[LSTK_SZ+1];
 cell last, base, state, dictEnd, inputFp, outputFp;
 byte *here, *vhere;
 char *blockStart, *toIn, wd[32];
-cell a;
+cell a, b;
 
 #define PRIMS \
 	X(CCOM,    "c,",        0, t=pop(); ccomma(t); ) \
@@ -59,20 +59,25 @@ cell a;
 	X(NEXT,    "next",      0, if (++L0<L1) { pc=(byte*)L2; } else { lsp=(lsp<3) ? 0 : lsp-3; } ) \
 	X(TOR,     ">r",        0, rpush(pop()); ) \
 	X(RAT,     "r@",        0, push(rstk[rsp]); ) \
+	X(RATI,    "r@+",       0, push(rstk[rsp]++); ) \
+	X(RATD,    "r@-",       0, push(rstk[rsp]--); ) \
 	X(RSTO,    "r!",        0, rstk[rsp] = pop(); ) \
 	X(RFROM,   "r>",        0, push(rpop()); ) \
 	X(RDROP,   "rdrop",     0, rpop(); ) \
 	X(TOT,     ">t",        0, tpush(pop()); ) \
 	X(TAT,     "t@",        0, push(tstk[tsp]); ) \
 	X(TATI,    "t@+",       0, push(tstk[tsp]++); ) \
+	X(TATD,    "t@-",       0, push(tstk[tsp]--); ) \
 	X(TSTO,    "t!",        0, tstk[tsp] = pop(); ) \
 	X(TFROM,   "t>",        0, push(tpop()); ) \
 	X(ASET,    "a!",        0, a=pop(); ) \
 	X(AGET,    "a@",        0, push(a); ) \
-	X(ASTO,    "!a",        0, t=pop(); *(byte*)a=(byte)t; ) \
-	X(AFET,    "@a",        0, push(*(byte*)a); ) \
-	X(ASTOI,   "!a+",       0, t=pop(); *(byte*)a=(byte)t; a++; ) \
-	X(AFETI,   "@a+",       0, push(*(byte*)a); a++; ) \
+	X(AGETI,   "a@+",       0, push(a++); ) \
+	X(AGETD,   "a@-",       0, push(a--); ) \
+	X(BSET,    "b!",        0, b=pop(); ) \
+	X(BGET,    "b@",        0, push(b); ) \
+	X(BGETI,   "b@+",       0, push(b++); ) \
+	X(BGETD,   "b@-",       0, push(b--); ) \
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \

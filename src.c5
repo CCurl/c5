@@ -14,7 +14,9 @@
 : if (jmpz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
-: a+ a@ 1+ a! ; inline
+: a+  a@ 1+ a! ; inline
+: @a  a@  c@ ; inline
+: @a+ a@+ c@ ; inline
 : a>t  a@ >t ; inline
 : t>a  t> a! ; inline
 : tdrop t> drop ; inline

@@ -150,8 +150,8 @@
     <None Include="src.c5" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="c5.cpp" />
-    <ClCompile Include="system.cpp" />
+    <ClCompile Include="c5.c" />
+    <ClCompile Include="system.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="c5.h" />

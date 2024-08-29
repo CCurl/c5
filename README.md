@@ -1,9 +1,9 @@
 # c5: A full-featured but very minimal Forth for Windows and Linux in 4 files
 
 c5 is comprised of 4 files:
-- c5.cpp
+- c5.c
 - c5.h
-- system.cpp
+- system.c
 - blocks.c5
 
 ## CELLs in c5
@@ -40,19 +40,22 @@ Of course, counted strings can be added if desired.<br/>
 
 
 ## The Third Stack
-c5 includes a third stack, with same ops as the return stack. (`>t`, `t@`, `t!`, `t>`). <br/>
+c5 includes a third stack, with same ops as the return stack.<br/>
+Note that the return stack also has some additional operations.<br/>
 The size of the third stack is configurable (see `STK_SZ`).<br/>
-This third stack can be used for any purpose. Words are:<br/>
+This third stack can be used for any purpose. Primitives are:<br/>
 
 | WORD  | STACK  | DESCRIPTION |
 |:--    |:--     |:-- |
 | `>t`  | (N--)  | Move N to the third stack. |
 | `t@`  | (--N)  | Copy TOS from the third stack. |
+| `t@+` | (--N)  | Copy TOS from the third stack, then Increment it. |
+| `t@-` | (--N)  | Copy TOS from the third stack, then decrement it. |
 | `t!`  | (N--)  | Store N to the third stack TOS. |
 | `t>`  | (--N)  | Move N from the third stack. |
 
 ## c5 primitives
-NOTE: To add custom primitives, fill in macro `USER_PRIMS` with X() macros in file `c5.cpp`.
+NOTE: To add custom primitives, add X() entries to the `PRIMS` macro in file `c5.c`.
 
 Stack effect notation conventions:
 
@@ -114,17 +117,22 @@ The primitives:
 | unloop    | (--)         | Unwind the loop stack. NOTE: this does NOT exit the loop. |
 | >r        | (N--R:N)     | Move TOS to the return stack |
 | r@        | (--N)        | N: return stack TOS |
+| r@+       | (--N)        | N: return stack TOS, then increment it |
+| r@-       | (--N)        | N: return stack TOS, then decrement it |
 | r!        | (N--)        | Set return stack TOS to N |
 | r>        | (R:N--N)     | Move return TOS to the stack |
 | rdrop     | (R:N--)      | Drop return stack TOS |
 | >t        | (N--T:N)     | Move TOS to the third stack |
 | t@        | (--N)        | N: third stack TOS |
+| t@+       | (--N)        | N: third stack TOS, then increment it |
+| t@-       | (--N)        | N: third stack TOS, then decrement it |
 | t!        | (N--)        | Set third stack TOS to N |
 | t>        | (T:N--N)     | Move third TOS to the stack |
 | a!        | (N--)        | Set 'a' to N |
 | a@        | (--N)        | N: current value on 'a' |
+| a@+       | (--N)        | N: current value on 'a', then increment 'a' |
+| a@-       | (--N)        | N: current value on 'a', then decrement 'a' |
 | @a        | (--B)        | B: Byte at address 'a' |
-| @a+       | (--B)        | B: Byte at address 'a', increment 'a' |
 | !a        | (B--)        | B: Store B to address 'a' |
 | !a+       | (B--)        | B: Store B to address 'a', increment 'a' |
 | emit      | (C--)        | Output char C |
