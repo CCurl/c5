@@ -11,26 +11,26 @@
 : -until (njmpz)  c, , ; immediate
 : again  (jmp)    c, , ; immediate
 
-: if (jmpz) c, here 0 , ; immediate
+: if (jmpz)   c, here 0 , ; immediate
+: -if (njmpz) c, here 0 , ; immediate
+: if0 (jmpnz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
 : a+  a@ 1+ a! ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
-: a>t  a@ >t ; inline
-: t>a  t> a! ; inline
+: adrop  a> drop ; inline
 : tdrop t> drop ; inline
 
-: (  a>t >in @ a! 
+: ( >in @ >a 
    begin
-      @a+ ')' = if  a@ >in !  t>a  exit  then 
+      @a+ ')' = if  a@ >in !  adrop  exit  then 
    again ; immediate
 
-
-: (quote) a>t  (lit4) c, vhere dup , >t  >in @ 1+ a! 
+: (quote)  (lit4) c, vhere dup , >t  >in @ 1+ >a 
    begin
       @a '"' =
-      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  t>a  exit  then
+      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  adrop  exit  then
       @a+ t@+ c! 
    again ;
 
@@ -43,33 +43,45 @@
 : space bl emit ; inline
 : negate com 1+ ; inline
 
-: #neg a>t 0 a! dup 0 < if negate a+ then ;
+: #neg 0 >a dup 0 < if negate a+ then ;
 : #c t@ 1- dup t! c! ;
 : #n '0' + dup '9' > if 7 + then #c ;
 : <# #neg last 32 - >t 0 t@ c! ;
 : #. '.' #c ;
 : # base @ /mod swap #n ;
 : #s begin # -while drop ;
-: #> a@ if '-' #c then t> t>a ;
+: #> a@ if '-' #c then t> adrop ;
 : .  ( n-- ) <# #s #> ztype space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
 
 : 2+ 1+ 1+ ; inline
 : mod /mod drop ; inline
+: ?dup -if dup then ;
+
+: .s '(' emit space
+   (dsp) @ 1- ?dup if
+      for i 1+ cell * dstk + @ . next
+   then ')' emit ;
 
 : dict-end dict dict-sz + 1- ;
 : de>xt    @ ;
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 mod 0= if cr exit then tab ;
-: words a>t last a! 1 >t begin
+: .de-word de>name ztype t@+ 10 mod if0 cr exit then tab ;
+: words last >a 1 >t begin
     a@ .de-word a@ de-sz + a!
-    a@ dict-end < while '(' emit t> 1- . ." words)" t>a ;
+    a@ dict-end < while '(' emit t> 1- . ." words)" adrop ;
 
 
+( editor )
+: .edch ( TODO! ) 32 emit ;
+: .b1  66 for '-' emit next cr ; : .b2 '|' emit ;
+: .scr .b1 16 for .b2 64 for .edch next .b2 cr next .b1 ;
+: ed .scr ;
 
+( temp words )
 : .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
 .ver
 
@@ -78,8 +90,8 @@
 : .d ( n-- ) base @ >t 10 base ! .3 t> base ! ;
 : .b ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
-: dump    ( f t-- ) a>t >t a! begin @a+ .  a@ t@ > until tdrop t>a ;
-: hexdump ( f t-- ) a>t >t a! begin @a+ .h a@ t@ > until tdrop t>a ;
+: dump    ( f t-- ) >t >a begin @a+ .  a@ t@ > until tdrop adrop ;
+: hexdump ( f t-- ) >t >a begin @a+ .h a@ t@ > until tdrop adrop ;
 
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;

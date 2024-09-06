@@ -7,6 +7,7 @@
 #define L0            lstk[lsp]
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
+#define DE_SZ         sizeof(DE_T)
 
 struct {
 	byte code[MAX_CODE+1];
@@ -19,10 +20,10 @@ cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell tsp, tstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
+cell asp, astk[STK_SZ+1];
 cell last, base, state, dictEnd, inputFp, outputFp;
 byte *here, *vhere;
 char *blockStart, *toIn, wd[32];
-cell a, b;
 
 #define PRIMS \
 	X(CCOM,    "c,",        0, t=pop(); ccomma(t); ) \
@@ -58,26 +59,24 @@ cell a, b;
 	X(NDX_I,   "i",         0, push(L0); ) \
 	X(NEXT,    "next",      0, if (++L0<L1) { pc=(byte*)L2; } else { lsp=(lsp<3) ? 0 : lsp-3; } ) \
 	X(TOR,     ">r",        0, rpush(pop()); ) \
+	X(RSTO,    "r!",        0, rstk[rsp] = pop(); ) \
 	X(RAT,     "r@",        0, push(rstk[rsp]); ) \
 	X(RATI,    "r@+",       0, push(rstk[rsp]++); ) \
 	X(RATD,    "r@-",       0, push(rstk[rsp]--); ) \
-	X(RSTO,    "r!",        0, rstk[rsp] = pop(); ) \
 	X(RFROM,   "r>",        0, push(rpop()); ) \
 	X(RDROP,   "rdrop",     0, rpop(); ) \
-	X(TOT,     ">t",        0, tpush(pop()); ) \
+	X(TOT,     ">t",        0, if (tsp < STK_SZ) { tstk[++tsp] = pop(); } ) \
+	X(TSTO,    "t!",        0, tstk[tsp] = pop(); ) \
 	X(TAT,     "t@",        0, push(tstk[tsp]); ) \
 	X(TATI,    "t@+",       0, push(tstk[tsp]++); ) \
 	X(TATD,    "t@-",       0, push(tstk[tsp]--); ) \
-	X(TSTO,    "t!",        0, tstk[tsp] = pop(); ) \
-	X(TFROM,   "t>",        0, push(tpop()); ) \
-	X(ASET,    "a!",        0, a=pop(); ) \
-	X(AGET,    "a@",        0, push(a); ) \
-	X(AGETI,   "a@+",       0, push(a++); ) \
-	X(AGETD,   "a@-",       0, push(a--); ) \
-	X(BSET,    "b!",        0, b=pop(); ) \
-	X(BGET,    "b@",        0, push(b); ) \
-	X(BGETI,   "b@+",       0, push(b++); ) \
-	X(BGETD,   "b@-",       0, push(b--); ) \
+	X(TFROM,   "t>",        0, push(0<tsp ? tstk[tsp--]: 0); ) \
+	X(ATO,     ">a",        0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
+	X(ASET,    "a!",        0, astk[asp]=pop(); ) \
+	X(AGET,    "a@",        0, push(astk[asp]); ) \
+	X(AGETI,   "a@+",       0, push(astk[asp]++); ) \
+	X(AGETD,   "a@-",       0, push(astk[asp]--); ) \
+	X(AFROM,   "a>",        0, push(0<asp ? astk[asp--]: 0); ) \
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \
@@ -92,6 +91,10 @@ cell a, b;
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
 	X(FLUSH,   "flush",     0, saveBlocks(); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
+	X(SCOPY,   "s-cpy",     0, t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
+	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
+	X(SCLEN,   "s-len",     0, TOS=strLen((char*)TOS); ) \
+	X(FILL,    "fill",      0, t=pop(); n=pop(); fill((byte*)pop(),n,t); ) \
 	X(BYE,     "bye",       0, ttyMode(0); exit(0); )
 
 #define X(op, name, imm, cod) op,
@@ -109,9 +112,7 @@ void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
-void tpush(cell x) { if (tsp < STK_SZ) { tstk[++tsp] = x; } }
-cell tpop() { return (0<tsp) ? tstk[tsp--] : 0; }
-int lower(const char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
+int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void fill(byte *buf, long sz, byte val) { for (int i=0; i<sz; i++) { buf[i] = val; } }
 
@@ -144,7 +145,7 @@ int nextWord() {
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
 	int ln = strLen(w);
-	last -= 32;
+	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
 	dp->xt = (cell)here;
 	dp->flags = 0;
@@ -162,7 +163,7 @@ DE_T *findWord(const char *w) {
 		DE_T *dp = (DE_T*)cw;
 		// printf("-fw:%lx,(%d,%d,%s)-", cw, dp->flags,dp->len,dp->name);
 		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
-		cw += 32;
+		cw += DE_SZ;
 	}
 	return (DE_T*)0;
 }
@@ -217,15 +218,18 @@ int isNum(const char *w) {
 	return 1;
 }
 
-int parseWord(char *w) {
-	// zType("-pw:"); zType(w); zType("-");
-	if (isNum(w)) {
-		if (state == 0) { return 1; }
-		cell n = pop();
+int compNum(cell n) {
 		if (btwi(n, 0, 0x7f)) { ccomma(LIT1); ccomma((char)n); }
 		else if (btwi(n, 0, 0x7fff)) { ccomma(LIT2); wcomma((ushort)n); }
 		else { ccomma(LIT4); comma(n); }
 		return 1;
+}
+
+int parseWord(char *w) {
+	// zType("-pw:"); zType(w); zType("-");
+	if (isNum(w)) {
+		if (state == 0) { return 1; }
+		return(compNum(pop()));
 	}
 
 	DE_T *dp = findWord(w);
@@ -267,11 +271,7 @@ int outer(const char *src) {
 }
 
 void defNum(const char *name, cell val) {
-	addWord(name);
-	if (btwi(val,0,0x7F)) { ccomma(LIT1); ccomma(val); }
-	else if (btwi(val,0,0x7FFF)) { ccomma(LIT2); wcomma(val); }
-	else { ccomma(LIT4); comma(val); }
-	ccomma(EXIT);
+	addWord(name); compNum(val); ccomma(EXIT);
 }
 
 void baseSys() {
@@ -294,6 +294,8 @@ void baseSys() {
 	defNum("rstk",   (cell)&rstk[0]);
 	defNum("(tsp)",  (cell)&tsp);
 	defNum("tstk",   (cell)&tstk[0]);
+	defNum("(asp)",  (cell)&asp);
+	defNum("astk",   (cell)&astk[0]);
 	defNum("(lsp)",  (cell)&lsp);
 	defNum("lstk",   (cell)&lstk[0]);
 	defNum("(ha)",   (cell)&here);
@@ -309,15 +311,17 @@ void baseSys() {
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
-	defNum("code-sz", MAX_CODE+1);
-	defNum("vars-sz", MAX_VARS+1);
-	defNum("dict-sz", MAX_DICT+1);
-	defNum("de-sz",   32);
-	defNum("disk-sz", BLOCK_SZ*(MAX_BLOCKNUM+1));
-	defNum("stk-sz",  STK_SZ+1);
-	defNum("tstk-sz", TSTK_SZ+1);
-	defNum("lstk-sz", LSTK_SZ+1);
-	defNum("cell",    CELL_SZ);
+	defNum("code-sz",  MAX_CODE+1);
+	defNum("vars-sz",  MAX_VARS+1);
+	defNum("dict-sz",  MAX_DICT+1);
+	defNum("de-sz",    sizeof(DE_T));
+	defNum("block-sz", BLOCK_SZ);
+	defNum("disk-sz",  BLOCK_SZ*(MAX_BLOCKNUM+1));
+	defNum("stk-sz",   STK_SZ+1);
+	defNum("tstk-sz",  TSTK_SZ+1);
+	defNum("lstk-sz",  LSTK_SZ+1);
+	defNum("cell",     CELL_SZ);
+
 	for (int i = 0; prims[i].name; i++) {
 		PRIM_T* p = &prims[i];
 		DE_T* dp = addWord(p->name);

@@ -16,16 +16,16 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION   20240830
+#define VERSION         20240905
 
 #ifdef IS_PC
     #define MAX_CODE    0x00FFFF
     #define MAX_VARS    0x0FFFFF
-    #define MAX_DICT    0x03FFFF
+    #define MAX_DICT    2500*sizeof(DE_T)
     #define STK_SZ            63
     #define LSTK_SZ           60
     #define TSTK_SZ           63
-    #define BLOCK_SZ        1000
+    #define BLOCK_SZ        1024
     #define MAX_BLOCKNUM     999
     #define btwi(n,l,h)   ((l<=n) && (n<=h))
     #define NO_FILE
@@ -49,7 +49,7 @@ typedef CELL_T cell;
 typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
-typedef struct { cell xt; byte flags, len; char name[32]; } DE_T;
+typedef struct { cell xt; byte flags, len; char name[32-(CELL_SZ+3)]; } DE_T;
 typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by c5.cpp
