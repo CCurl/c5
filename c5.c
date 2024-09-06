@@ -26,7 +26,7 @@ byte *here, *vhere;
 char *blockStart, *toIn, wd[32];
 
 #define PRIMS \
-	X(CCOM,    "c,",        0, t=pop(); ccomma(t); ) \
+	X(CCOM,    "c,",        0, t=pop(); *(here++) = (byte)t; ) \
 	X(WCOM,    "w,",        0, t=pop(); wcomma(t); ) \
 	X(LCOM,    ",",         0, t=pop(); comma(t); ) \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -80,7 +80,7 @@ char *blockStart, *toIn, wd[32];
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \
-	X(COLON,   ":",         1, addWord(0); state = 1; ) \
+	X(COLON,   ":",         1, addWord(0); state=1; ) \
 	X(SEMI,    ";",         1, ccomma(EXIT); state=0; ) \
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
@@ -219,7 +219,7 @@ int isNum(const char *w) {
 }
 
 int compNum(cell n) {
-		if (btwi(n, 0, 0x7f)) { ccomma(LIT1); ccomma((char)n); }
+		if (btwi(n, 0, 0x7f)) { ccomma(LIT1); ccomma((byte)n); }
 		else if (btwi(n, 0, 0x7fff)) { ccomma(LIT2); wcomma((ushort)n); }
 		else { ccomma(LIT4); comma(n); }
 		return 1;
@@ -357,6 +357,7 @@ void Init() {
 	blockStart = &mem.blocks[0];
 	last       = (cell)&mem.dict[MAX_DICT];
 	dictEnd    = last;
+	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
 	loadBlocks();
 }

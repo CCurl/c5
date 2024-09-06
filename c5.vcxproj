@@ -100,13 +100,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AssemblerOutput>AssemblyAndSourceCode</AssemblerOutput>
-      <Optimization>Full</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

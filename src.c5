@@ -29,21 +29,20 @@
       @a+ ')' = if  a@ >in !  adrop  exit  then 
    again ; immediate
 
-: interp?  state @ 0= ;
-: comp?  interp? 0= ;
+( now we can have comments! )
 
+: comp?   ( --n ) state @ ;
 : (quote) ( -- )  vhere dup >t  >in @ 1+ >a
    begin
       @a '"' = if
          0 !t+  a> 1+ >in !
-         interp? if tdrop exit then
-         t> (vha) ! (lit4) c, , exit
+         comp? if t> (vha) ! (lit4) c, , exit then
+         tdrop exit
       then @a+ !t+
    again ;
 
 : "  (quote) ; immediate
-: ." (quote) interp? if ztype exit then
-  (ztype) c, ; immediate
+: ." (quote) comp? if (ztype) c, exit then ztype ; immediate
 
 : bl 32 ; inline
 : tab 9 emit ; inline
@@ -59,7 +58,9 @@
 : # base @ /mod swap #n ;
 : #s begin # -while drop ;
 : #> a@ if '-' #c then t> adrop ;
-: .  ( n-- ) <# #s #> ztype space ;
+
+: (.)  ( n-- ) <# #s #> ztype ;
+: .  ( n-- ) (.) space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
 
@@ -91,7 +92,7 @@
 
 ( temp words )
 : .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
-.ver
+.ver ." hello"
 
 ( temp for testing )
 : .h ( n-- ) base @ >t 16 base ! .2 t> base ! ;
