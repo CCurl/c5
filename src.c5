@@ -67,8 +67,8 @@
 : mod /mod drop ; inline
 : ?dup -if dup then ;
 
-: .s '(' emit space
-   (dsp) @ 1- ?dup if
+: depth (dsp) @ 1- ;
+: .s '(' emit space depth ?dup if
       for i 1+ cell * dstk + @ . next
    then ')' emit ;
 
