@@ -19,6 +19,8 @@
 : a+  a@ 1+ a! ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
+: !a+ a@+ c! ; inline
+: !t+ t@+ c! ; inline
 : adrop  a> drop ; inline
 : tdrop t> drop ; inline
 
@@ -27,15 +29,21 @@
       @a+ ')' = if  a@ >in !  adrop  exit  then 
    again ; immediate
 
-: (quote)  (lit4) c, vhere dup , >t  >in @ 1+ >a 
+: interp?  state @ 0= ;
+: comp?  interp? 0= ;
+
+: (quote) ( -- )  vhere dup >t  >in @ 1+ >a
    begin
-      @a '"' =
-      if  0 t@+ c!  t> (vha) !  a@ 1+ >in !  adrop  exit  then
-      @a+ t@+ c! 
+      @a '"' = if
+         0 !t+  a> 1+ >in !
+         interp? if tdrop exit then
+         t> (vha) ! (lit4) c, , exit
+      then @a+ !t+
    again ;
 
 : "  (quote) ; immediate
-: ." (quote) (ztype) c, ; immediate
+: ." (quote) interp? if ztype exit then
+  (ztype) c, ; immediate
 
 : bl 32 ; inline
 : tab 9 emit ; inline
@@ -78,7 +86,7 @@
 ( editor )
 : .edch ( TODO! ) 32 emit ;
 : .b1  66 for '-' emit next cr ; : .b2 '|' emit ;
-: .scr .b1 16 for .b2 64 for .edch next .b2 cr next .b1 ;
+: .scr .b1 32 for .b2 64 for .edch next .b2 cr next .b1 ;
 : ed .scr ;
 
 ( temp words )
