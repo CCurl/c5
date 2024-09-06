@@ -22,10 +22,10 @@
     #define MAX_CODE    0x00FFFF
     #define MAX_VARS    0x0FFFFF
     #define MAX_DICT    2500*sizeof(DE_T)
+    #define MAX_DISK    0x0FFFFF
     #define STK_SZ            63
     #define LSTK_SZ           60
     #define TSTK_SZ           63
-    #define MAX_DISK    0x0FFFFF
     #define btwi(n,l,h)   ((l<=n) && (n<=h))
     #define NO_FILE
 #endif // IS_PC
@@ -64,7 +64,7 @@ extern void ttyMode(int isRaw);
 extern int  key();
 extern int  qKey();
 extern cell timer();
-extern void saveBlocks();
+extern void saveDisk();
 extern cell fOpen(const char *name, cell mode);
 extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);

@@ -23,7 +23,7 @@ cell lsp, lstk[LSTK_SZ+1];
 cell asp, astk[STK_SZ+1];
 cell last, base, state, dictEnd, inputFp, outputFp;
 byte *here, *vhere;
-char *blockStart, *toIn, wd[32];
+char *toIn, wd[32];
 
 #define PRIMS \
 	X(CCOM,    "c,",        0, t=pop(); *(here++) = (byte)t; ) \
@@ -90,7 +90,7 @@ char *blockStart, *toIn, wd[32];
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
-	X(FLUSH,   "flush",     0, saveBlocks(); ) \
+	X(FLUSH,   "flush",     0, saveDisk(); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",     0, t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
 	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
@@ -331,7 +331,7 @@ void baseSys() {
 	}
 }
 
-void loadBlocks() {
+void loadDisk() {
 	cell fp = fOpen("disk.c5", (cell)"rb");
 	if (!fp) { fp = fOpen("src.c5", (cell)"rb"); }
 	if (fp) {
@@ -341,8 +341,9 @@ void loadBlocks() {
 	outer(&mem.disk[0]);
 }
 
-void saveBlocks() {
-	cell fp = fOpen("blocks.c5", (cell)"wb");
+void saveDisk
+() {
+	cell fp = fOpen("disk.c5", (cell)"wb");
 	if (fp) {
 		fWrite((cell)mem.disk, sizeof(mem.disk), (cell)fp);
 		fClose(fp);
@@ -354,10 +355,9 @@ void Init() {
 	base       = 10;
 	here       = &mem.code[0];
 	vhere      = &mem.vars[0];
-	blockStart = &mem.disk[0];
 	last       = (cell)&mem.dict[MAX_DICT];
 	dictEnd    = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
-	loadBlocks();
+	loadDisk();
 }
