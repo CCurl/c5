@@ -69,5 +69,6 @@ extern cell fOpen(const char *name, cell mode);
 extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);
 extern cell fWrite(cell buf, cell sz, cell fh);
+extern cell fSeek(cell fh, cell offset);
 
 #endif //  __C5_H__
