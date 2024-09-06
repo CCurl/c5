@@ -25,8 +25,7 @@
     #define STK_SZ            63
     #define LSTK_SZ           60
     #define TSTK_SZ           63
-    #define BLOCK_SZ        1024
-    #define MAX_BLOCKNUM     999
+    #define MAX_DISK    0x0FFFFF
     #define btwi(n,l,h)   ((l<=n) && (n<=h))
     #define NO_FILE
 #endif // IS_PC

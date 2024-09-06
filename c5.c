@@ -13,7 +13,7 @@ struct {
 	byte code[MAX_CODE+1];
 	byte vars[MAX_VARS+1];
 	byte dict[MAX_DICT+1];
-	char blocks[BLOCK_SZ*(MAX_BLOCKNUM+1)];
+	char disk[MAX_DISK+1];
 } mem;
 
 cell dsp, dstk[STK_SZ+1];
@@ -86,6 +86,7 @@ char *blockStart, *toIn, wd[32];
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
+	X(FSEEK,   "fseek",     0, t=pop(); n=pop(); push(fSeek(t, n)); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
@@ -307,7 +308,7 @@ void baseSys() {
 	defNum("code",        (cell)&mem.code[0]);
 	defNum("vars",        (cell)&mem.vars[0]);
 	defNum("dict",        (cell)&mem.dict[0]);
-	defNum("blocks",      (cell)&mem.blocks[0]);
+	defNum("disk",        (cell)&mem.disk[0]);
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
@@ -315,8 +316,7 @@ void baseSys() {
 	defNum("vars-sz",  MAX_VARS+1);
 	defNum("dict-sz",  MAX_DICT+1);
 	defNum("de-sz",    sizeof(DE_T));
-	defNum("block-sz", BLOCK_SZ);
-	defNum("disk-sz",  BLOCK_SZ*(MAX_BLOCKNUM+1));
+	defNum("disk-sz",  MAX_DISK+1);
 	defNum("stk-sz",   STK_SZ+1);
 	defNum("tstk-sz",  TSTK_SZ+1);
 	defNum("lstk-sz",  LSTK_SZ+1);
@@ -332,19 +332,19 @@ void baseSys() {
 }
 
 void loadBlocks() {
-	cell fp = fOpen("blocks.c5", (cell)"rb");
+	cell fp = fOpen("disk.c5", (cell)"rb");
 	if (!fp) { fp = fOpen("src.c5", (cell)"rb"); }
 	if (fp) {
-		fRead((cell)mem.blocks, sizeof(mem.blocks), (cell)fp);
+		fRead((cell)mem.disk, sizeof(mem.disk), (cell)fp);
 		fClose(fp);
 	}
-	outer(&mem.blocks[0]);
+	outer(&mem.disk[0]);
 }
 
 void saveBlocks() {
 	cell fp = fOpen("blocks.c5", (cell)"wb");
 	if (fp) {
-		fWrite((cell)mem.blocks, sizeof(mem.blocks), (cell)fp);
+		fWrite((cell)mem.disk, sizeof(mem.disk), (cell)fp);
 		fClose(fp);
 	}
 }
@@ -354,7 +354,7 @@ void Init() {
 	base       = 10;
 	here       = &mem.code[0];
 	vhere      = &mem.vars[0];
-	blockStart = &mem.blocks[0];
+	blockStart = &mem.disk[0];
 	last       = (cell)&mem.dict[MAX_DICT];
 	dictEnd    = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
