@@ -1,6 +1,10 @@
 : here  (ha) @ ;
 : vhere (vha) @ ;
 : last  (la) @ ;
+: allot vhere + (vha) ! ;
+: const addword (lit4) c, , (exit) c, ;
+: var   vhere const allot ;
+
 : immediate 1 last cell + c! ;
 : inline    2 last cell + c! ;
 
@@ -19,10 +23,13 @@
 : a+  a@ 1+ a! ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
+: @a- a@- c@ ; inline
 : !a+ a@+ c! ; inline
 : !t+ t@+ c! ; inline
+: !t- t@- c! ; inline
 : adrop  a> drop ; inline
-: tdrop t> drop ; inline
+: tdrop  t> drop ; inline
+: atdrop a> drop t> drop ; inline
 
 : ( >in @ >a 
    begin
@@ -63,10 +70,15 @@
 : .  ( n-- ) (.) space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
+: .hex ( n-- ) base @ >t 16 base ! .2 t> base ! ;
+: .dec ( n-- ) base @ >t 10 base ! .3 t> base ! ;
+: .bin ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
+: cells cell * ;
 : 2+ 1+ 1+ ; inline
 : mod /mod drop ; inline
 : ?dup -if dup then ;
+: ? @ . ;
 
 : depth (dsp) @ 1- ;
 : .s '(' emit space depth ?dup if
@@ -83,24 +95,52 @@
     a@ .de-word a@ de-sz + a!
     a@ dict-end < while '(' emit t> 1- . ." words)" adrop ;
 
+( memory / strings )
+: cmove ( src dst n-- ) >r >t >a
+    r> ?dup if for @a+ !t+ next then
+    atdrop ;
+
+: cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
+    r> ?dup if 1+ for @a- !t- next then
+    atdrop ;
+
+( blocks )
+cell var blk
+
+( screen )
+: csi     ( -- )      27 emit '[' emit ;
+: ->cr    ( c r-- )   csi (.) ';' emit (.) 'H' emit ;
+: ->rc    ( r c-- )   swap ->cr ;
+: cls     ( -- )      csi ." 2J" 1 dup ->rc ;
+: clr-eol ( -- )      csi ." 0K" ;
+: color   ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
+: fg      ( fg-- )    40 swap color ;
+
+: white   0 fg ;      : red    31 fg ;
+: green  32 fg ;      : yellow 33 fg ;
+: blue   34 fg ;      : purple 35 fg ;
+: cyan   36 fg ;      : grey   37 fg ;
 
 ( editor )
-: .edch ( TODO! ) 32 emit ;
-: .b1  66 for '-' emit next cr ; : .b2 '|' emit ;
-: .scr .b1 32 for .b2 64 for .edch next .b2 cr next .b1 ;
-: ed .scr ;
+: rows 25 ;
+: cols 60 ;
+: .edch ( a-- ) ( TODO! ) 32 + emit ;
+: .b1  green cols 2+ for '-' emit next white cr ;
+: .b2  green '|' emit white ;
+: .scr 1 dup ->rc .b1  rows for 
+      .b2  cols for i .edch next  .b2 cr
+   next .b1 ;
+: ed cls .scr ;
+: edit blk ! ed ;
 
 ( temp words )
 : .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
 .ver ." hello"
 
 ( temp for testing )
-: .h ( n-- ) base @ >t 16 base ! .2 t> base ! ;
-: .d ( n-- ) base @ >t 10 base ! .3 t> base ! ;
-: .b ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
-: dump    ( f t-- ) >t >a begin @a+ .  a@ t@ > until tdrop adrop ;
-: hexdump ( f t-- ) >t >a begin @a+ .h a@ t@ > until tdrop adrop ;
+: dump    ( f t-- ) >t >a begin @a+ .    a@ t@ > until atdrop ;
+: hexdump ( f t-- ) >t >a begin @a+ .hex a@ t@ > until atdrop ;
 
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;

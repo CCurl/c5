@@ -27,7 +27,6 @@ char *toIn, wd[32];
 
 #define PRIMS \
 	X(CCOM,    "c,",        0, t=pop(); *(here++) = (byte)t; ) \
-	X(WCOM,    "w,",        0, t=pop(); wcomma(t); ) \
 	X(LCOM,    ",",         0, t=pop(); comma(t); ) \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
 	X(SWAP,    "swap",      0, t=TOS; TOS=NOS; NOS=t; ) \
@@ -35,10 +34,8 @@ char *toIn, wd[32];
 	X(OVER,    "over",      0, t=NOS; push(t); ) \
 	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
 	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
-	X(WFET,    "w@",        0, TOS = fetchWord((byte*)TOS); ) \
 	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
 	X(CSTO,    "c!",        0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
-	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord((byte*)t, n); ) \
 	X(ADD,     "+",         0, t=pop(); TOS += t; ) \
 	X(SUB,     "-",         0, t=pop(); TOS -= t; ) \
 	X(MUL,     "*",         0, t=pop(); TOS *= t; ) \
@@ -85,16 +82,16 @@ char *toIn, wd[32];
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
+	X(SVDISK,  "save-disk", 0, saveDisk(); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
-	X(FSEEK,   "fseek",     0, t=pop(); n=pop(); push(fSeek(t, n)); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
-	X(FLUSH,   "flush",     0, saveDisk(); ) \
+	X(FSEEK,   "fseek",     0, t=pop(); TOS=fSeek(t,TOS); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",     0, t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
 	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
-	X(SCLEN,   "s-len",     0, TOS=strLen((char*)TOS); ) \
+	X(SLEN,    "s-len",     0, TOS=strLen((char*)TOS); ) \
 	X(FILL,    "fill",      0, t=pop(); n=pop(); fill((byte*)pop(),n,t); ) \
 	X(BYE,     "bye",       0, ttyMode(0); exit(0); )
 
@@ -103,6 +100,7 @@ char *toIn, wd[32];
 enum _PRIM  {
 	STOP, LIT1, LIT2, LIT4, CALL, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS
 };
+
 
 #undef X
 #define X(op, name, imm, code) { op, name, imm },
@@ -117,12 +115,11 @@ int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void fill(byte *buf, long sz, byte val) { for (int i=0; i<sz; i++) { buf[i] = val; } }
 
-void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
 void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
 cell fetchCell(byte *a) { return *(cell*)(a); }
 void ccomma(byte n)   { *(here++) = n; }
-void wcomma(ushort n) { storeWord(here, n); here += 2; }
+void wcomma(ushort n) { *(ushort*)(here) = n; here += 2; }
 void comma(cell n)    { storeCell(here, n); here += CELL_SZ; }
 
 int strEqI(const char *s, const char *d) {
@@ -333,7 +330,7 @@ void baseSys() {
 
 void loadDisk() {
 	cell fp = fOpen("disk.c5", (cell)"rb");
-	if (!fp) { fp = fOpen("src.c5", (cell)"rb"); }
+	if (!fp) { fp = fOpen("boot.c5", (cell)"rb"); }
 	if (fp) {
 		fRead((cell)mem.disk, sizeof(mem.disk), (cell)fp);
 		fClose(fp);
@@ -341,8 +338,7 @@ void loadDisk() {
 	outer(&mem.disk[0]);
 }
 
-void saveDisk
-() {
+void saveDisk() {
 	cell fp = fOpen("disk.c5", (cell)"wb");
 	if (fp) {
 		fWrite((cell)mem.disk, sizeof(mem.disk), (cell)fp);
