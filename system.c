@@ -66,6 +66,7 @@ cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz,
 cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, offset, SEEK_SET); }
 
 void repl() {
+    ttyMode(0);
     zType(" ok\n");
     char tib[256];
     if (fgets(tib, 256, stdin) != tib) { exit(0); }

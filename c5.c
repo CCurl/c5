@@ -225,6 +225,7 @@ int compNum(cell n) {
 
 int parseWord(char *w) {
 	// zType("-pw:"); zType(w); zType("-");
+
 	if (isNum(w)) {
 		if (state == 0) { return 1; }
 		return(compNum(pop()));
@@ -246,8 +247,6 @@ int parseWord(char *w) {
 			byte *y = (byte*)dp->xt;
 			do { ccomma(*(y++)); } while ( *(y) != EXIT );
 		} else {
-			// if (*(here-CELL_SZ-1) == CALL) { *(here-CELL_SZ-1) = JMP; }
-			// else { ccomma(CALL); comma(dp->xt); }
 			ccomma(CALL); comma(dp->xt);
 		}
 		return 1;
@@ -260,7 +259,7 @@ int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (!parseWord(wd)) {
-			emit('-'); zType(wd); zType("?-");
+			zType("-wd:"); zType(wd); zType("?-");
 			state=0;
 			return 0;
 		}
