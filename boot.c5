@@ -186,3 +186,4 @@ cell var blk
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
+: lg " lazygit" system ;
