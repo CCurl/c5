@@ -22,7 +22,6 @@
     #define MAX_CODE    0x00FFFF
     #define MAX_VARS    0x0FFFFF
     #define MAX_DICT    2500*sizeof(DE_T)
-    #define MAX_DISK    0x0FFFFF
     #define STK_SZ            63
     #define LSTK_SZ           60
     #define TSTK_SZ           63

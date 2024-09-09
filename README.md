@@ -1,10 +1,9 @@
-# c5: A full-featured but very minimal Forth for Windows and Linux in 5 files
+# c5: A full-featured but very minimal Forth for Windows and Linux in 4 files
 
-c5 is comprised of 5 files:
+c5 is comprised of 4 files:
 - c5.c
 - c5.h
 - system.c
-- disk.c5
 - boot.c5
 
 ## CELLs in c5
@@ -15,11 +14,10 @@ A `CELL` is either 32-bits or 64-bits, depending on the target system.
 - Windows 64-bit (x64): not supported.
 
 ## c5 memory areas
-c5 provides five memory areas:
+c5 provides 3 memory areas:
 - code
 - variables
 - dictionary entries
-- ram-disk data
 
 Built-in words for the memory areas
 

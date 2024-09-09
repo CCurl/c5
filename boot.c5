@@ -142,6 +142,7 @@
 ( blocks )
 ( NOTE: block 0 is a temporary block, used by the editor )
 cell var blk
+: disk vars 10000 + ;
 : rows 25 ; inline
 : cols 80 ; inline
 : block-sz rows cols * ; inline

@@ -12,7 +12,6 @@
 byte code[MAX_CODE+1];
 byte vars[MAX_VARS+1];
 byte dict[MAX_DICT+1];
-char disk[MAX_DISK+1];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell tsp, tstk[STK_SZ+1];
@@ -81,7 +80,6 @@ char *toIn, wd[32];
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
-	X(SVDISK,  "save-disk", 0, saveDisk(); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
@@ -304,7 +302,6 @@ void baseSys() {
 	defNum("code",        (cell)&code[0]);
 	defNum("vars",        (cell)&vars[0]);
 	defNum("dict",        (cell)&dict[0]);
-	defNum("disk",        (cell)&disk[0]);
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
@@ -312,7 +309,6 @@ void baseSys() {
 	defNum("vars-sz",  MAX_VARS+1);
 	defNum("dict-sz",  MAX_DICT+1);
 	defNum("de-sz",    sizeof(DE_T));
-	defNum("disk-sz",  MAX_DISK+1);
 	defNum("stk-sz",   STK_SZ+1);
 	defNum("tstk-sz",  TSTK_SZ+1);
 	defNum("lstk-sz",  LSTK_SZ+1);
@@ -327,22 +323,13 @@ void baseSys() {
 	}
 }
 
-void loadDisk() {
-	cell fp = fOpen("disk.c5", (cell)"rb");
-	if (!fp) { fp = fOpen("boot.c5", (cell)"rb"); }
+void boot() {
+	cell fp = fOpen("boot.c5", (cell)"rb");
 	if (fp) {
-		fRead((cell)disk, sizeof(disk), (cell)fp);
+		fRead((cell)&vars[10000], 99999, (cell)fp);
 		fClose(fp);
 	}
-	outer(&disk[0]);
-}
-
-void saveDisk() {
-	cell fp = fOpen("disk.c5", (cell)"wb");
-	if (fp) {
-		fWrite((cell)disk, sizeof(disk), (cell)fp);
-		fClose(fp);
-	}
+	outer((char*)&vars[10000]);
 }
 
 void Init() {
@@ -353,5 +340,5 @@ void Init() {
 	dictEnd    = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
-	loadDisk();
+	boot();
 }
