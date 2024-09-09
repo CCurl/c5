@@ -60,6 +60,7 @@
 : cr 13 emit 10 emit ; inline
 : space bl emit ; inline
 : negate com 1+ ; inline
+: w, here w! here 2 + (ha) ! ;
 
 : #neg 0 >a dup 0 < if negate a+ then ;
 : #c t@ 1- dup t! c! ;
