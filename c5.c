@@ -29,6 +29,8 @@ char *toIn, wd[32];
 	X(SWAP,    "swap",      0, t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",      0, pop(); ) \
 	X(OVER,    "over",      0, t=NOS; push(t); ) \
+	X(WFET,    "w@",        0, TOS = fetchWord((byte*)TOS); ) \
+	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord((byte*)t, n); ) \
 	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
 	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
 	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
@@ -112,6 +114,7 @@ int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void fill(byte *buf, long sz, byte val) { for (int i=0; i<sz; i++) { buf[i] = val; } }
 
+void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
 void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
 cell fetchCell(byte *a) { return *(cell*)(a); }
