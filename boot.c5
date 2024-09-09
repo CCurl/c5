@@ -7,6 +7,8 @@
 
 : immediate 1 last cell + c! ;
 : inline    2 last cell + c! ;
+: [ 0 state ! ; immediate
+: ] 1 state ! ;
 
 : begin here ; immediate
 : while  (jmpnz)  c, , ; immediate
@@ -104,7 +106,6 @@
     a@ .de-word a@ de-sz + a!
     a@ dict-end < while '(' emit t> 1- . ." words)" adrop ;
 
-
 ( memory / strings )
 : cmove ( src dst n-- ) >r >t >a
     r> ?dup if for @a+ !t+ next then
@@ -114,17 +115,17 @@
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
 
-( blocks )
-( NOTE: block 0 is a temporary block, used by the editor )
-cell var blk
-: block-sz 1500 ; inline
-: ->block   ( n--a )  block-sz * disk + ;
+: s-end  ( str--end )     dup s-len + ; inline
+: s-cat  ( dst src--dst ) over s-end swap s-cpy drop ;
+: s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
+: s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
+: p ( --a ) vhere 100 + ;
 
 ( screen )
 : csi       ( -- )    27 emit '[' emit ;
 : ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
 : ->rc      ( r c-- ) swap ->cr ;
-: cls       ( -- )    csi ." 2J" 1 dup ->rc ;
+: cls       ( -- )    csi ." 2J" 1 dup ->cr ;
 : clr-eol   ( -- )    csi ." 0K" ;
 : cur-on    ( -- )    csi ." ?25h" ;
 : cur-off   ( -- )    csi ." ?25l" ;
@@ -138,44 +139,59 @@ cell var blk
 : blue   34 fg ;      : purple 35 fg ;
 : cyan   36 fg ;      : grey   37 fg ;
 
-( editor )
+( blocks )
+( NOTE: block 0 is a temporary block, used by the editor )
+cell var blk
+: rows 25 ; inline
+: cols 80 ; inline
+: block-sz rows cols * ; inline
+: ->block   ( n--a )  block-sz * disk + ;
+
+( a simple block editor )
 0 ->block const ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
-: rows 25 ;  cell var row : row! row ! ; : row@ row @ ;
-: cols 60 ;  cell var col : col! col ! ; : col@ col @ ;
-: norm-row ( a--b ) row@ 0 max rows 1- min row! ;
-: norm-col ( a--b ) col@ 0 max cols 1- min col! ;
-: mv ( r c-- )  col +! row +! norm-row norm-col ;
+cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
+cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
+: norm-row ( -- ) row@ 0 max rows 1- min row! ;
+: norm-col ( -- ) col@ 0 max cols 1- min col! ;
+: mv ( r c-- )  (c) +! (r) +! norm-row norm-col ;
 : rc->pos ( --pos ) row@ cols * col@ + ed-block + ;
-1 var mode             : mode@   mode c@ ;
-1 var show             : show?   show c@ ;
-1 var dirty            : dirty? dirty c@ ;
-: show!  1 show  c! ;  : shown 0 show  c! ;
-: dirty! 1 dirty c! show! ;
-: mode! mode c! ;
-: clean 0 dirty c! ;
+1 var (mode)             : mode@   (mode) c@ ;
+1 var (show)             : show?   (show) c@ ;
+1 var (dirty)            : dirty?  (dirty) c@ ;
+: mode! (mode) c! ;      : clean 0 (dirty) c! ;
+: show!  1 (show)  c! ;  : shown 0 (show)  c! ;
+: dirty! 1 (dirty) c! show! ;
 : quit?  mode@ 99 = ;
-: .edch ( a-- ) c@ 32 max emit ;
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
+: .edch ( a-- ) c@ 32 max emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
       .b2  cols for a@+ .edch next  .b2 cr
    next .b1 adrop ;
 : ->cur  col@ 2+ row@ 2+ ->cr ;
-: ->foot 1 rows 2+ 1+ ->cr ;
+: ->foot 1 rows 3 + ->cr ;
+: ->cmd ->foot cr ;
 : .foot ->foot ." Block #" blk @ . lpar row@ (.) ',' emit col@ (.) rpar ;
-: printable? ( c--f ) dup >t 32 >  t> 127 < and ;
-: replace-char ( c-- ) rc->pos c! 0 1 mv dirty! ;
-: show show? if cur-off shown .scr cur-on then .foot ->cur ;
-: ed-init block->ed 0 mode! show! 0 dup row! col! cls .scr ;
-: ed-process-key a@ 3 = if 99 mode! exit then a@ replace-char ;
+: printable? ( c--f ) dup >a 31 >  a> 127 < and ;
+: replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then ;
+: show show? if cur-off .scr cur-on shown then .foot ->cur ;
+: ed-process-key ( -- )
+   a@ 'h' = if  0 -1 mv exit then
+   a@ 'j' = if  1  0 mv exit then
+   a@ 'k' = if -1  0 mv exit then
+   a@ 'l' = if  0  1 mv exit then
+   a@ 13  = if 1 -99 mv exit then
+   a@  3  = if 99 mode! exit then
+   replace-char ;
 : ed-loop begin show key >a ed-process-key adrop quit? until ;
-: ed  ed-init ed-loop ed->block ->foot cr cr ;
+: ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
+: ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
 
 ( temp words )
-: .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
+: .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
 .ver ." hello"
 
 ( temp for testing )
@@ -187,3 +203,4 @@ cell var blk
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
 : lg " lazygit" system ;
+: ls " ls -l" system ;

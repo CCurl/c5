@@ -9,13 +9,10 @@
 #define L2            lstk[lsp-2]
 #define DE_SZ         sizeof(DE_T)
 
-struct {
-	byte code[MAX_CODE+1];
-	byte vars[MAX_VARS+1];
-	byte dict[MAX_DICT+1];
-	char disk[MAX_DISK+1];
-} mem;
-
+byte code[MAX_CODE+1];
+byte vars[MAX_VARS+1];
+byte dict[MAX_DICT+1];
+char disk[MAX_DISK+1];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell tsp, tstk[STK_SZ+1];
@@ -89,7 +86,7 @@ char *toIn, wd[32];
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
 	X(FSEEK,   "fseek",     0, t=pop(); TOS=fSeek(t,TOS); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
-	X(SCOPY,   "s-cpy",     0, t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
+	X(SCOPY,   "s-cpy",     0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
 	X(SLEN,    "s-len",     0, TOS=strLen((char*)TOS); ) \
 	X(FILL,    "fill",      0, t=pop(); n=pop(); fill((byte*)pop(),n,t); ) \
@@ -301,10 +298,10 @@ void baseSys() {
 	defNum("base",   (cell)&base);
 	defNum("state",  (cell)&state);
 
-	defNum("code",        (cell)&mem.code[0]);
-	defNum("vars",        (cell)&mem.vars[0]);
-	defNum("dict",        (cell)&mem.dict[0]);
-	defNum("disk",        (cell)&mem.disk[0]);
+	defNum("code",        (cell)&code[0]);
+	defNum("vars",        (cell)&vars[0]);
+	defNum("dict",        (cell)&dict[0]);
+	defNum("disk",        (cell)&disk[0]);
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
@@ -331,26 +328,25 @@ void loadDisk() {
 	cell fp = fOpen("disk.c5", (cell)"rb");
 	if (!fp) { fp = fOpen("boot.c5", (cell)"rb"); }
 	if (fp) {
-		fRead((cell)mem.disk, sizeof(mem.disk), (cell)fp);
+		fRead((cell)disk, sizeof(disk), (cell)fp);
 		fClose(fp);
 	}
-	outer(&mem.disk[0]);
+	outer(&disk[0]);
 }
 
 void saveDisk() {
 	cell fp = fOpen("disk.c5", (cell)"wb");
 	if (fp) {
-		fWrite((cell)mem.disk, sizeof(mem.disk), (cell)fp);
+		fWrite((cell)disk, sizeof(disk), (cell)fp);
 		fClose(fp);
 	}
 }
 
 void Init() {
-	fill((byte*)&mem, sizeof(mem), 0);
 	base       = 10;
-	here       = &mem.code[0];
-	vhere      = &mem.vars[0];
-	last       = (cell)&mem.dict[MAX_DICT];
+	here       = &code[0];
+	vhere      = &vars[0];
+	last       = (cell)&dict[MAX_DICT];
 	dictEnd    = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
