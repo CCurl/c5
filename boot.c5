@@ -1,0 +1,189 @@
+: here  (ha) @ ;
+: vhere (vha) @ ;
+: last  (la) @ ;
+: allot vhere + (vha) ! ;
+: const addword (lit4) c, , (exit) c, ;
+: var   vhere const allot ;
+
+: immediate 1 last cell + c! ;
+: inline    2 last cell + c! ;
+
+: begin here ; immediate
+: while  (jmpnz)  c, , ; immediate
+: -while (njmpnz) c, , ; immediate
+: until  (jmpz)   c, , ; immediate
+: -until (njmpz)  c, , ; immediate
+: again  (jmp)    c, , ; immediate
+
+: if (jmpz)   c, here 0 , ; immediate
+: -if (njmpz) c, here 0 , ; immediate
+: if0 (jmpnz) c, here 0 , ; immediate
+: then here swap ! ; immediate
+
+: a+  a@ 1+ a! ; inline
+: @a  a@  c@ ; inline
+: @a+ a@+ c@ ; inline
+: @a- a@- c@ ; inline
+: !a+ a@+ c! ; inline
+: !t+ t@+ c! ; inline
+: !t- t@- c! ; inline
+: adrop  a> drop ; inline
+: tdrop  t> drop ; inline
+: atdrop a> drop t> drop ; inline
+
+: ( >in @ >a 
+   begin
+      @a+ ')' = if  a@ >in !  adrop  exit  then 
+   again ; immediate
+
+( now we can have comments! )
+
+: execute ( xt-- ) >r ;
+: :noname here 1 state ! ;
+: comp?   ( --n ) state @ ;
+: (quote) ( -- )  vhere dup >t  >in @ 1+ >a
+   begin
+      @a '"' = if
+         0 !t+  a> 1+ >in !
+         comp? if t> (vha) ! (lit4) c, , exit then
+         tdrop exit
+      then @a+ !t+
+   again ;
+
+: "  (quote) ; immediate
+: ." (quote) comp? if (ztype) c, exit then ztype ; immediate
+
+: bl 32 ; inline
+: tab 9 emit ; inline
+: cr 13 emit 10 emit ; inline
+: space bl emit ; inline
+: negate com 1+ ; inline
+
+: #neg 0 >a dup 0 < if negate a+ then ;
+: #c t@ 1- dup t! c! ;
+: #n '0' + dup '9' > if 7 + then #c ;
+: <# #neg last 32 - >t 0 t@ c! ;
+: #. '.' #c ;
+: # base @ /mod swap #n ;
+: #s begin # -while drop ;
+: #> a@ if '-' #c then t> adrop ;
+
+: (.)  ( n-- ) <# #s #> ztype ;
+: .  ( n-- ) (.) space ;
+: .2 ( n-- ) <# # #s #> ztype space ;
+: .3 ( n-- ) <# # # #s #> ztype space ;
+: .hex ( n-- ) base @ >t 16 base ! .2 t> base ! ;
+: .dec ( n-- ) base @ >t 10 base ! .3 t> base ! ;
+: .bin ( n-- ) base @ >t  2 base ! .  t> base ! ;
+
+: cells cell * ;
+: 2+ 1+ 1+ ; inline
+: 2dup over over ; inline
+: mod /mod drop ; inline
+: ?dup -if dup then ;
+: ? @ . ;
+: tuck swap over ; inline
+: +! ( n a-- ) tuck @ + swap ! ;
+: min ( a b--c ) 2dup > if swap then drop ;
+: max ( a b--c ) 2dup < if swap then drop ;
+
+: depth (dsp) @ 1- ;
+: lpar '(' emit ; inline
+: rpar ')' emit ; inline
+: .s '(' emit space depth ?dup if
+      for i 1+ cell * dstk + @ . next
+   then ')' emit ;
+
+: dict-end dict dict-sz + 1- ;
+: de>xt    @ ;
+: de>flags cell + c@ ;
+: de>len   cell + 1+ c@ ;
+: de>name  cell + 2+ ;
+: .de-word de>name ztype t@+ 10 mod if0 cr exit then tab ;
+: words last >a 1 >t begin
+    a@ .de-word a@ de-sz + a!
+    a@ dict-end < while '(' emit t> 1- . ." words)" adrop ;
+
+
+( memory / strings )
+: cmove ( src dst n-- ) >r >t >a
+    r> ?dup if for @a+ !t+ next then
+    atdrop ;
+
+: cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
+    r> ?dup if 1+ for @a- !t- next then
+    atdrop ;
+
+( blocks )
+( NOTE: block 0 is a temporary block, used by the editor )
+cell var blk
+: block-sz 1500 ; inline
+: ->block   ( n--a )  block-sz * disk + ;
+
+( screen )
+: csi       ( -- )    27 emit '[' emit ;
+: ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
+: ->rc      ( r c-- ) swap ->cr ;
+: cls       ( -- )    csi ." 2J" 1 dup ->rc ;
+: clr-eol   ( -- )    csi ." 0K" ;
+: cur-on    ( -- )    csi ." ?25h" ;
+: cur-off   ( -- )    csi ." ?25l" ;
+: cur-block ( -- )    csi ." 2 q" ;
+: cur-bar   ( -- )    csi ." 5 q" ;
+
+: color   ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
+: fg      ( fg-- )    40 swap color ;
+: white   0 fg ;      : red    31 fg ;
+: green  32 fg ;      : yellow 33 fg ;
+: blue   34 fg ;      : purple 35 fg ;
+: cyan   36 fg ;      : grey   37 fg ;
+
+( editor )
+0 ->block const ed-block
+: block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
+: ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
+: rows 25 ;  cell var row : row! row ! ; : row@ row @ ;
+: cols 60 ;  cell var col : col! col ! ; : col@ col @ ;
+: norm-row ( a--b ) row@ 0 max rows 1- min row! ;
+: norm-col ( a--b ) col@ 0 max cols 1- min col! ;
+: mv ( r c-- )  col +! row +! norm-row norm-col ;
+: rc->pos ( --pos ) row@ cols * col@ + ed-block + ;
+1 var mode             : mode@   mode c@ ;
+1 var show             : show?   show c@ ;
+1 var dirty            : dirty? dirty c@ ;
+: show!  1 show  c! ;  : shown 0 show  c! ;
+: dirty! 1 dirty c! show! ;
+: mode! mode c! ;
+: clean 0 dirty c! ;
+: quit?  mode@ 99 = ;
+: .edch ( a-- ) c@ 32 max emit ;
+: .b1  green cols 2+ for '-' emit next white cr ;
+: .b2  green '|' emit white ;
+: .scr 1 dup ->rc .b1 ed-block >a rows for 
+      .b2  cols for a@+ .edch next  .b2 cr
+   next .b1 adrop ;
+: ->cur  col@ 2+ row@ 2+ ->cr ;
+: ->foot 1 rows 2+ 1+ ->cr ;
+: .foot ->foot ." Block #" blk @ . lpar row@ (.) ',' emit col@ (.) rpar ;
+: printable? ( c--f ) dup >t 32 >  t> 127 < and ;
+: replace-char ( c-- ) rc->pos c! 0 1 mv dirty! ;
+: show show? if cur-off shown .scr cur-on then .foot ->cur ;
+: ed-init block->ed 0 mode! show! 0 dup row! col! cls .scr ;
+: ed-process-key a@ 3 = if 99 mode! exit then a@ replace-char ;
+: ed-loop begin show key >a ed-process-key adrop quit? until ;
+: ed  ed-init ed-loop ed->block ->foot cr cr ;
+: edit  blk ! ed ;
+
+( temp words )
+: .ver  ." c5 v" version <# # # #. # # #. #s #> ztype cr ;
+.ver ." hello"
+
+( temp for testing )
+
+: dump    ( f t-- ) >t >a begin @a+ .    a@ t@ > until atdrop ;
+: hexdump ( f t-- ) >t >a begin @a+ .hex a@ t@ > until atdrop ;
+
+: mil 1000 dup * * ;
+: elapsed timer swap - . ." usec" ;
+: bm timer swap for next elapsed ;
+: lg " lazygit" system ;
