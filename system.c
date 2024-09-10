@@ -62,7 +62,7 @@ cell fOpen(const char *name, cell mode) { return (cell)fopen(name, (char*)mode);
 void fClose(cell fh) { fclose((FILE*)fh); }
 cell fRead(cell buf, cell sz, cell fh) { return (cell)fread((char*)buf, 1, sz, (FILE*)fh); }
 cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz, (FILE*)fh); }
-cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, offset, SEEK_SET); }
+cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, SEEK_SET); }
 
 void repl() {
     ttyMode(0);
