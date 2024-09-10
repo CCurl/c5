@@ -1,4 +1,4 @@
-# c5: A full-featured but very minimal Forth for Windows and Linux in 4 files
+# c5: A full-featured Forth for Windows and Linux in 4 files
 
 c5 is comprised of 4 files:
 - c5.c
@@ -11,7 +11,7 @@ A `CELL` is either 32-bits or 64-bits, depending on the target system.
 - Linux 32-bit (-m32): a CELL is 32-bits.
 - Linux 64-bit (-m64): a CELL is 64-bits.
 - Windows 32-bit (x86): a CELL is 32-bits.
-- Windows 64-bit (x64): not supported.
+- Windows 64-bit (x64): a CELL is 64-bits.
 
 ## c5 memory areas
 c5 provides 3 memory areas:
@@ -38,17 +38,7 @@ Of course, counted strings can be added if desired.<br/>
 c5 includes 2 additionl stacks, A and T.<br/>
 Note that the return stack also has some additional operations.<br/>
 The size of these stacks is configurable (see `TSTK_SZ`).<br/>
-They can be used for any purpose. Primitives are:<br/>
-The A stack has similar primitives.<br/>
-
-| WORD  | STACK  | DESCRIPTION |
-|:--    |:--     |:-- |
-| `>t`  | (N--)  | Move N to the T stack. |
-| `t@`  | (--N)  | Copy T-TOS from the T stack. |
-| `t@+` | (--N)  | Copy T-TOS from the T stack, then Increment it. |
-| `t@-` | (--N)  | Copy T-TOS from the T stack, then decrement it. |
-| `t!`  | (N--)  | Store N to T-TOS. |
-| `t>`  | (--N)  | Move N from the T stack. |
+They can be used for any purpose.<br/>
 
 ## c5 primitives
 NOTE: To add custom primitives, add X() entries to the `PRIMS` macro in file `c5.c`.
@@ -85,12 +75,12 @@ The primitives:
 | swap      | (X Y--Y X)   | Swap TOS and NOS (Next-On-Stack) |
 | drop      | (N--)        | Drop TOS |
 | over      | (N X--N X N) | Push NOS |
-| @         | (A--N)       | N: the CELL at address A |
 | c@        | (A--C)       | C: the CHAR at address A |
 | w@        | (A--W)       | W: the WORD at address A |
-| !         | (N A--)      | Store CELL N to address A |
+| @         | (A--N)       | N: the CELL at address A |
 | c!        | (C A--)      | Store CHAR C to address A |
 | w!        | (W A--)      | Store WORD W to address A |
+| !         | (N A--)      | Store CELL N to address A |
 | +         | (X Y--N)     | N: X + Y |
 | -         | (X Y--N)     | N: X - Y |
 | *         | (X Y--N)     | N: X * Y |
@@ -109,7 +99,6 @@ The primitives:
 | for       | (N--)        | Begin FOR loop with bounds 0 and N. |
 | i         | (--I)        | I: Current FOR loop index. |
 | next      | (--)         | Increment I. If I < N, start loop again, else exit. |
-| unloop    | (--)         | Unwind the loop stack. NOTE: this does NOT exit the loop. |
 | >r        | (N--)        | Move TOS to the return stack |
 | r@        | (--N)        | N: return stack TOS |
 | r@+       | (--N)        | N: return stack TOS, then increment it |
@@ -133,15 +122,18 @@ The primitives:
 | :         | (--)         | Create a new word, set STATE=1 |
 | ;         | (--)         | Compile EXIT, set STATE=0 |
 | addword   | (--)         | Add the next word to the dictionary |
+| find      | (--W A)      | W: Execution Token, A: Dict Entry address (0 0 if not found) |
 | timer     | (--N)        | N: Current time |
 | ztype     | (SZ--)       | Print string at SZ (uncounted, unformatted) |
 | fopen     | (NM MD--FH)  | NM: File Name, MD: Mode, FH: File Handle (0 if error/not found) |
-|           |              |     NOTE: NM and MD are uncounted, use `z"` |
 | fclose    | (FH--)       | FH: File Handle to close |
-| fdelete   | (NM--)       | NM: File Name to delere |
 | fread     | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars read |
 | fwrite    | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars written |
+| fseek     | (N FH--)     | Set current file offset to N for file FH |
 | load      | (N--)        | N: Block number to load (file named "block-NNN.c5") |
-| find      | (--W A)      | W: Execution Token, A: Dict Entry address (0 0 if not found) |
-| system    | (SC--)       | PC ONLY: SC: String to send to `system()` |
-| bye       | (--)         | PC ONLY: Exit c5 |
+| system    | (S--)        | PC ONLY: SC: String to send to `system()` |
+| s-cpy     | (D S--D)     | Copy string S to D |
+| s-eqi     | (D S--F)     | String compare F: 1 if S and are the same (case-insensitive) |
+| s-len     | (S--N)       | N: length of string S |
+| fill      | (A B N--)    | Fill N bytes with B starting at address A |
+| bye       | (--)         | Exit c5 |

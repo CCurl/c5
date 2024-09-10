@@ -87,8 +87,12 @@ const -ha-
 : [ 0 state ! ; immediate
 : ] 1 state ! ;
 : cells cell * ; inline
+: cell+ cell + ; inline
 : 2+ 1+ 1+ ; inline
+: 2* dup + ; inline
+: 2/ 2 / ; inline
 : 2dup over over ; inline
+: 2drop drop drop ; inline
 : mod /mod drop ; inline
 : ?dup -if dup then ;
 : ? @ . ;
@@ -116,10 +120,7 @@ const -ha-
     a@ dict-end < while lpar t> 1- . ." words)" adrop ;
 
 ( memory / strings )
-: cmove ( src dst n-- ) >r >t >a
-    r> ?dup if for @a+ !t+ next then
-    atdrop ;
-
+: fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
 : cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
@@ -208,7 +209,7 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.c5" " rb" fopen ?dup if >a
       vars 10000 + >t 
-      t@ 99999 0 fill 
+      0 t@ 99999 fill 
       t@ 99999 a@ fread drop a> fclose
       t> >in !
    then ;

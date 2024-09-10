@@ -14,9 +14,9 @@ byte vars[MAX_VARS+1];
 byte dict[MAX_DICT+1];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
-cell tsp, tstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
-cell asp, astk[STK_SZ+1];
+cell tsp, tstk[TSTK_SZ+1];
+cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
 char *toIn, wd[32];
@@ -83,12 +83,12 @@ char *toIn, wd[32];
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
-	X(FSEEK,   "fseek",     0, t=pop(); TOS=fSeek(t,TOS); ) \
+	X(FSEEK,   "fseek",     0, t=pop(); n=pop(); fSeek(t,n); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",     0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
 	X(SLEN,    "s-len",     0, TOS=strLen((char*)TOS); ) \
-	X(FILL,    "fill",      0, t=pop(); n=pop(); fill((byte*)pop(),n,t); ) \
+	X(CMOVE,   "cmove",     0, t=pop(); n=pop(); cmove((byte*)pop(),(byte*)n,t); ) \
 	X(BYE,     "bye",       0, ttyMode(0); exit(0); )
 
 #define X(op, name, imm, cod) op,
@@ -109,7 +109,7 @@ void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
-void fill(byte *buf, long sz, byte val) { for (int i=0; i<sz; i++) { buf[i] = val; } }
+void cmove(byte *f, byte *t, cell n) { for (int i=0; i<n; i++) { t[i]=f[i]; } }
 
 void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
