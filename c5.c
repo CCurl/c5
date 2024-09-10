@@ -17,22 +17,20 @@ cell rsp, rstk[STK_SZ+1];
 cell tsp, tstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
 cell asp, astk[STK_SZ+1];
-cell last, base, state, dictEnd, inputFp, outputFp;
+cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
 char *toIn, wd[32];
 
 #define PRIMS \
-	X(CCOM,    "c,",        0, t=pop(); *(here++) = (byte)t; ) \
-	X(LCOM,    ",",         0, t=pop(); comma(t); ) \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
 	X(SWAP,    "swap",      0, t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",      0, pop(); ) \
 	X(OVER,    "over",      0, t=NOS; push(t); ) \
+	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
+	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
 	X(WFET,    "w@",        0, TOS = fetchWord((byte*)TOS); ) \
 	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord((byte*)t, n); ) \
-	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
 	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
-	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
 	X(CSTO,    "c!",        0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
 	X(ADD,     "+",         0, t=pop(); TOS += t; ) \
 	X(SUB,     "-",         0, t=pop(); TOS -= t; ) \
@@ -41,10 +39,10 @@ char *toIn, wd[32];
 	X(SLMOD,   "/mod",      0, t=TOS; n = NOS; TOS = n/t; NOS = n%t; ) \
 	X(INCR,    "1+",        0, ++TOS; ) \
 	X(DECR,    "1-",        0, --TOS; ) \
-	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
+	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
 	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
 	X(OR,      "or",        0, t=pop(); TOS |= t; ) \
@@ -52,7 +50,7 @@ char *toIn, wd[32];
 	X(COM,     "com",       0, TOS = ~TOS; ) \
 	X(FOR,     "for",       0, lsp+=3; L2=(cell)pc; L0=0; L1=pop(); ) \
 	X(NDX_I,   "i",         0, push(L0); ) \
-	X(NEXT,    "next",      0, if (++L0<L1) { pc=(byte*)L2; } else { lsp=(lsp<3) ? 0 : lsp-3; } ) \
+	X(NEXT,    "next",      0, if (++L0<L1) { pc=(byte*)L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
 	X(TOR,     ">r",        0, rpush(pop()); ) \
 	X(RSTO,    "r!",        0, rstk[rsp] = pop(); ) \
 	X(RAT,     "r@",        0, push(rstk[rsp]); ) \
@@ -78,6 +76,7 @@ char *toIn, wd[32];
 	X(COLON,   ":",         1, addWord(0); state=1; ) \
 	X(SEMI,    ";",         1, ccomma(EXIT); state=0; ) \
 	X(ADDWORD, "addword",   0, addWord(0); ) \
+	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
@@ -179,7 +178,7 @@ next:
 		NCASE LIT1:   push((byte)*(pc++));
 		NCASE LIT2:   push(fetchWord(pc)); pc += 2;
 		NCASE LIT4:   push(fetchCell(pc)); pc += CELL_SZ;
-		NCASE CALL:   t=(cell)pc+CELL_SZ; if (*pc!=EXIT) { rpush(t); } pc = (byte*)fetchCell(pc);
+		NCASE CALL:   t=(cell)pc+CELL_SZ; if (*(byte*)t!=EXIT) { rpush(t); } pc=(byte*)fetchCell(pc);
 		NCASE JMP:    pc=(byte*)fetchCell(pc); // zType("-jmp-");
 		NCASE JMPZ:   t=fetchCell(pc); if (pop()==0) { pc = (byte*)t; } else { pc += CELL_SZ; }
 		NCASE NJMPZ:  t=fetchCell(pc); if (TOS==0)   { pc = (byte*)t; } else { pc += CELL_SZ; }
@@ -257,7 +256,7 @@ int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (!parseWord(wd)) {
-			zType("-wd:"); zType(wd); zType("?-");
+			zType("-nf:["); zType(wd); zType("]-");
 			state=0;
 			return 0;
 		}
@@ -323,15 +322,6 @@ void baseSys() {
 	}
 }
 
-void boot() {
-	cell fp = fOpen("boot.c5", (cell)"rb");
-	if (fp) {
-		fRead((cell)&vars[10000], 99999, (cell)fp);
-		fClose(fp);
-	}
-	outer((char*)&vars[10000]);
-}
-
 void Init() {
 	base       = 10;
 	here       = &code[0];
@@ -340,5 +330,4 @@ void Init() {
 	dictEnd    = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
-	boot();
 }

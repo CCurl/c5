@@ -23,34 +23,32 @@ Built-in words for the memory areas
 
 | WORD       | STACK   | DESCRIPTION |
 |:--         |:--      |:--          |
-| (dsp)      | (--N)   | Offset of the data stack pointer |
-| (rsp)      | (--N)   | Offset of the return stack pointer |
-| (lsp)      | (--N)   | Offset of the loop stack pointer |
-| (tsp)      | (--N)   | Offset of the third stack pointer |
-| (here)     | (--N)   | Offset of the HERE variable |
-| (last)     | (--N)   | Offset of the LAST variable |
-| base       | (--N)   | Offset of the BASE variable |
-| state      | (--N)   | Offset of the STATE variable |
+| code       | (--A)   | Start of the code area. |
+| vars       | (--A)   | Start of the vars area. |
+| dict       | (--A)   | Start of the dict area. |
+| (ha)       | (--A)   | Address of the HERE variable |
+| (la)       | (--A)   | Address of the LAST variable |
+| (vha)      | (--A)   | Address of the VHERE variable |
 
 ## c5 Strings
 Strings in c5 are NULL terminated, not counted.<br/>
 Of course, counted strings can be added if desired.<br/>
 
-
-## The Third Stack
-c5 includes a third stack, with same ops as the return stack.<br/>
+## The A and T Stacks
+c5 includes 2 additionl stacks, A and T.<br/>
 Note that the return stack also has some additional operations.<br/>
-The size of the third stack is configurable (see `STK_SZ`).<br/>
-This third stack can be used for any purpose. Primitives are:<br/>
+The size of these stacks is configurable (see `TSTK_SZ`).<br/>
+They can be used for any purpose. Primitives are:<br/>
+The A stack has similar primitives.<br/>
 
 | WORD  | STACK  | DESCRIPTION |
 |:--    |:--     |:-- |
-| `>t`  | (N--)  | Move N to the third stack. |
-| `t@`  | (--N)  | Copy TOS from the third stack. |
-| `t@+` | (--N)  | Copy TOS from the third stack, then Increment it. |
-| `t@-` | (--N)  | Copy TOS from the third stack, then decrement it. |
-| `t!`  | (N--)  | Store N to the third stack TOS. |
-| `t>`  | (--N)  | Move N from the third stack. |
+| `>t`  | (N--)  | Move N to the T stack. |
+| `t@`  | (--N)  | Copy T-TOS from the T stack. |
+| `t@+` | (--N)  | Copy T-TOS from the T stack, then Increment it. |
+| `t@-` | (--N)  | Copy T-TOS from the T stack, then decrement it. |
+| `t!`  | (N--)  | Store N to T-TOS. |
+| `t>`  | (--N)  | Move N from the T stack. |
 
 ## c5 primitives
 NOTE: To add custom primitives, add X() entries to the `PRIMS` macro in file `c5.c`.
@@ -60,7 +58,6 @@ Stack effect notation conventions:
 | TERM     | DESCRIPTION |
 |:--       |:-- |
 | SZ/NM/MD | String, uncounted, NULL terminated |
-| SC/D/S   | String, counted, NULL terminated |
 | A        | Address |
 | C        | Number, 8-bits |
 | W        | Number, 16-bits |
@@ -113,26 +110,25 @@ The primitives:
 | i         | (--I)        | I: Current FOR loop index. |
 | next      | (--)         | Increment I. If I < N, start loop again, else exit. |
 | unloop    | (--)         | Unwind the loop stack. NOTE: this does NOT exit the loop. |
-| >r        | (N--R:N)     | Move TOS to the return stack |
+| >r        | (N--)        | Move TOS to the return stack |
 | r@        | (--N)        | N: return stack TOS |
 | r@+       | (--N)        | N: return stack TOS, then increment it |
 | r@-       | (--N)        | N: return stack TOS, then decrement it |
 | r!        | (N--)        | Set return stack TOS to N |
-| r>        | (R:N--N)     | Move return TOS to the stack |
-| rdrop     | (R:N--)      | Drop return stack TOS |
-| >t        | (N--T:N)     | Move TOS to the third stack |
-| t@        | (--N)        | N: third stack TOS |
-| t@+       | (--N)        | N: third stack TOS, then increment it |
-| t@-       | (--N)        | N: third stack TOS, then decrement it |
-| t!        | (N--)        | Set third stack TOS to N |
-| t>        | (T:N--N)     | Move third TOS to the stack |
-| a!        | (N--)        | Set 'a' to N |
-| a@        | (--N)        | N: current value on 'a' |
-| a@+       | (--N)        | N: current value on 'a', then increment 'a' |
-| a@-       | (--N)        | N: current value on 'a', then decrement 'a' |
-| @a        | (--B)        | B: Byte at address 'a' |
-| !a        | (B--)        | B: Store B to address 'a' |
-| !a+       | (B--)        | B: Store B to address 'a', increment 'a' |
+| r>        | (--N)        | Move return TOS to the stack |
+| rdrop     | (N--)        | Drop return stack TOS |
+| >t        | (N--N)       | Move TOS to the T stack |
+| t@        | (--N)        | N: T-TOS |
+| t@+       | (--N)        | N: T-TOS, then increment T-TOS |
+| t@-       | (--N)        | N: T-TOS, then decrement T-TOS |
+| t!        | (N--)        | Set T-TOS to N |
+| t>        | (N--N)       | Move T-TOS to the stack |
+| >a        | (N--N)       | Move TOS to the A stack |
+| a!        | (N--)        | Set A-TOS to N |
+| a@        | (--N)        | N: A-TOS |
+| a@+       | (--N)        | N: A-TOS, then increment A-TOS |
+| a@-       | (--N)        | N: A-TOS, then decrement A-TOS |
+| a>        | (--N)        | Move A-TOS to the stack |
 | emit      | (C--)        | Output char C |
 | :         | (--)         | Create a new word, set STATE=1 |
 | ;         | (--)         | Compile EXIT, set STATE=0 |
@@ -146,7 +142,6 @@ The primitives:
 | fread     | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars read |
 | fwrite    | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars written |
 | load      | (N--)        | N: Block number to load (file named "block-NNN.c5") |
-| loaded?   | (W A--)      | Stops current load if A <> 0 (see `find`) |
 | find      | (--W A)      | W: Execution Token, A: Dict Entry address (0 0 if not found) |
 | system    | (SC--)       | PC ONLY: SC: String to send to `system()` |
 | bye       | (--)         | PC ONLY: Exit c5 |

@@ -1,7 +1,10 @@
 (ha) @ (la) @ (vha) @
-: here  (ha) @ ;
+: here  (ha)  @ ;
 : vhere (vha) @ ;
-: last  (la) @ ;
+: last  (la)  @ ;
+: c, here dup 1+     (ha) ! c! ;
+: w, here dup 2 +    (ha) ! w! ;
+: ,  here dup cell + (ha) ! ! ;
 : allot vhere + (vha) ! ;
 : const addword (lit4) c, , (exit) c, ;
 : var   vhere const allot ;
@@ -12,8 +15,6 @@ const -ha-
 
 : immediate 1 last cell + c! ;
 : inline    2 last cell + c! ;
-: [ 0 state ! ; immediate
-: ] 1 state ! ;
 
 : begin here ; immediate
 : while  (jmpnz)  c, , ; immediate
@@ -45,8 +46,6 @@ const -ha-
 
 ( now we can have comments! )
 
-: execute ( xt-- ) >r ;
-: :noname here 1 state ! ;
 : comp?   ( --n ) state @ ;
 : (quote) ( -- )  vhere dup >t  >in @ 1+ >a
    begin
@@ -65,7 +64,6 @@ const -ha-
 : cr 13 emit 10 emit ; inline
 : space bl emit ; inline
 : negate com 1+ ; inline
-: w, here w! here 2 + (ha) ! ;
 
 : #neg 0 >a dup 0 < if negate a+ then ;
 : #c t@ 1- dup t! c! ;
@@ -84,12 +82,17 @@ const -ha-
 : .dec ( n-- ) base @ >t 10 base ! .3 t> base ! ;
 : .bin ( n-- ) base @ >t  2 base ! .  t> base ! ;
 
-: cells cell * ;
+: execute ( xt-- ) >r ;
+: :noname here 1 state ! ;
+: [ 0 state ! ; immediate
+: ] 1 state ! ;
+: cells cell * ; inline
 : 2+ 1+ 1+ ; inline
 : 2dup over over ; inline
 : mod /mod drop ; inline
 : ?dup -if dup then ;
 : ? @ . ;
+: nip  swap drop ; inline
 : tuck swap over ; inline
 : +! ( n a-- ) tuck @ + swap ! ;
 : min ( a b--c ) 2dup > if swap then drop ;
@@ -98,9 +101,9 @@ const -ha-
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
 : rpar ')' emit ; inline
-: .s '(' emit space depth ?dup if
-      for i 1+ cell * dstk + @ . next
-   then ')' emit ;
+: .s lpar space depth ?dup if
+      for i 1+ cells dstk + @ . next
+   then rpar ;
 
 : dict-end dict dict-sz + 1- ;
 : de>xt    @ ;
@@ -110,7 +113,7 @@ const -ha-
 : .de-word de>name ztype t@+ 10 mod if0 cr exit then tab ;
 : words last >a 1 >t begin
     a@ .de-word a@ de-sz + a!
-    a@ dict-end < while '(' emit t> 1- . ." words)" adrop ;
+    a@ dict-end < while lpar t> 1- . ." words)" adrop ;
 
 ( memory / strings )
 : cmove ( src dst n-- ) >r >t >a
@@ -166,12 +169,14 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : norm-col ( -- ) col@ 0 max cols 1- min col! ;
 : mv ( r c-- )  (c) +! (r) +! norm-row norm-col ;
 : rc->pos ( --pos ) row@ cols * col@ + ed-block + ;
-1 var (mode)             : mode@   (mode) c@ ;
-1 var (show)             : show?   (show) c@ ;
+1 var (mode)             : mode@   (mode)  c@ ;
+1 var (show)             : show?   (show)  c@ ;
 1 var (dirty)            : dirty?  (dirty) c@ ;
 : mode! (mode) c! ;      : clean 0 (dirty) c! ;
 : show!  1 (show)  c! ;  : shown 0 (show)  c! ;
 : dirty! 1 (dirty) c! show! ;
+: norm-mode  0 mode! ;
+: repl-mode  1 mode! ;
 : quit?  mode@ 99 = ;
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
@@ -199,12 +204,13 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
 
-: c5-reset
+: reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.c5" " rb" fopen ?dup if >a
-      vars 1000000 0 fill 
-      vars 10000 + 900000 a@ fread drop a> fclose
-      vars 10000 + >in !
+      vars 10000 + >t 
+      t@ 99999 0 fill 
+      t@ 99999 a@ fread drop a> fclose
+      t> >in !
    then ;
 
 ( temp words )
@@ -221,3 +227,4 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : bm timer swap for next elapsed ;
 : lg " lazygit" system ;
 : ls " ls -l" system ;
+: pwd " pwd" system ;
