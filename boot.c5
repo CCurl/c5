@@ -1,9 +1,14 @@
+(ha) @ (la) @ (vha) @
 : here  (ha) @ ;
 : vhere (vha) @ ;
 : last  (la) @ ;
 : allot vhere + (vha) ! ;
 : const addword (lit4) c, , (exit) c, ;
 : var   vhere const allot ;
+
+const -vha-
+const -la-
+const -ha-
 
 : immediate 1 last cell + c! ;
 : inline    2 last cell + c! ;
@@ -141,16 +146,18 @@
 : cyan   36 fg ;      : grey   37 fg ;
 
 ( blocks )
-( NOTE: block 0 is a temporary block, used by the editor )
-cell var blk
-: disk vars 10000 + ;
-: rows 25 ; inline
-: cols 80 ; inline
-: block-sz rows cols * ; inline
+: disk-sz 1000000 ;
+: block-sz 2000 ; inline
+disk-sz block-sz / 1- const max-block
+vars vars-sz + disk-sz - const disk
 : ->block   ( n--a )  block-sz * disk + ;
 
+cell var blk
+: rows 25 ; inline
+: cols 80 ; inline
+
 ( a simple block editor )
-0 ->block const ed-block
+block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
 cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
@@ -191,6 +198,14 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
+
+: c5-reset
+   -vha- (vha) !  -la- (la) !  -ha- (ha) !
+   " boot.c5" " rb" fopen ?dup if >a
+      vars 1000000 0 fill 
+      vars 10000 + 900000 a@ fread drop a> fclose
+      vars 10000 + >in !
+   then ;
 
 ( temp words )
 : .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;

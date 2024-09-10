@@ -20,7 +20,7 @@
 
 #ifdef IS_PC
     #define MAX_CODE    0x00FFFF
-    #define MAX_VARS    0x0FFFFF
+    #define MAX_VARS    1999999
     #define MAX_DICT    2500*sizeof(DE_T)
     #define STK_SZ            63
     #define LSTK_SZ           60
