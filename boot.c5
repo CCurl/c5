@@ -121,6 +121,9 @@ const -ha-
 
 ( memory / strings )
 : fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
+: cmove ( src dst n-- ) >r >t >a
+    r> ?dup if for @a+ !t+ next then
+    atdrop ;
 : cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
