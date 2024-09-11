@@ -121,6 +121,7 @@ The primitives:
 | emit      | (C--)        | Output char C |
 | :         | (--)         | Create a new word, set STATE=1 |
 | ;         | (--)         | Compile EXIT, set STATE=0 |
+| outer     | (S--)        | Parse S using the outer interpreter |
 | addword   | (--)         | Add the next word to the dictionary |
 | find      | (--W A)      | W: Execution Token, A: Dict Entry address (0 0 if not found) |
 | timer     | (--N)        | N: Current time |
@@ -131,7 +132,7 @@ The primitives:
 | fwrite    | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars written |
 | fseek     | (N FH--)     | Set current file offset to N for file FH |
 | load      | (N--)        | N: Block number to load (file named "block-NNN.c5") |
-| system    | (S--)        | PC ONLY: SC: String to send to `system()` |
+| system    | (S--)        | SC: String to send to `system()` |
 | s-cpy     | (D S--D)     | Copy string S to D |
 | s-eqi     | (D S--F)     | String compare F: 1 if S and are the same (case-insensitive) |
 | s-len     | (S--N)       | N: length of string S |

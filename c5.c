@@ -75,6 +75,7 @@ char *toIn, wd[32];
 	X(QKEY,    "?key",      0, push(qKey()); ) \
 	X(COLON,   ":",         1, addWord(0); state=1; ) \
 	X(SEMI,    ";",         1, ccomma(EXIT); state=0; ) \
+	X(OUTER,   "outer",     0, t=pop(); n=(cell)toIn; outer((char*)t); toIn=(char*)n; ) \
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
