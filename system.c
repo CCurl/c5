@@ -54,7 +54,6 @@ int key() {
 
 #endif // IS_LINUX
 
-#ifdef IS_PC
 cell timer() { return (cell)clock(); }
 void zType(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
 void emit(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); }
@@ -63,7 +62,7 @@ cell fOpen(const char *name, cell mode) { return (cell)fopen(name, (char*)mode);
 void fClose(cell fh) { fclose((FILE*)fh); }
 cell fRead(cell buf, cell sz, cell fh) { return (cell)fread((char*)buf, 1, sz, (FILE*)fh); }
 cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz, (FILE*)fh); }
-cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, offset, SEEK_SET); }
+cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, SEEK_SET); }
 
 void repl() {
     ttyMode(0);
@@ -73,10 +72,22 @@ void repl() {
     outer(tib);
 }
 
+void boot(const char *fn) {
+    if (!fn) { fn = "boot.c5"; }
+	cell fp = fOpen(fn, (cell)"rb");
+	if (fp) {
+		fRead((cell)&vars[10000], 99999, fp);
+		fClose(fp);
+	    outer((char*)&vars[10000]);
+	} else {
+        zType("WARNING: unable to open source file!\n");
+        zType("If no filename is provided, the default is 'boot.c5'\n");
+    }
+}
+
 int main(int argc, char *argv[]) {
 	Init();
+    boot((1<argc) ? argv[1] : 0);
     while (1) { repl(); }
 	return 0;
 }
-
-#endif // is_PC
