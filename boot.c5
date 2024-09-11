@@ -33,6 +33,9 @@ const -ha-
 : @a+ a@+ c@ ; inline
 : @a- a@- c@ ; inline
 : !a+ a@+ c! ; inline
+: !a- a@- c! ; inline
+: @t  t@  c@ ; inline
+: @t+ t@+ c@ ; inline
 : !t+ t@+ c! ; inline
 : !t- t@- c! ; inline
 : adrop  a> drop ; inline
@@ -102,6 +105,8 @@ const -ha-
 : +! ( n a-- ) tuck @ + swap ! ;
 : min ( a b--c ) 2dup > if swap then drop ;
 : max ( a b--c ) 2dup < if swap then drop ;
+: vc, vhere c! 1 allot ;
+: v, vhere ! cell allot ;
 
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
@@ -134,6 +139,7 @@ const -ha-
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
 : p ( --a ) vhere 100 + ;
+
 
 ( screen )
 : csi       ( -- )    27 emit '[' emit ;
@@ -180,8 +186,8 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : mode! (mode) c! ;      : clean 0 (dirty) c! ;
 : show!  1 (show)  c! ;  : shown 0 (show)  c! ;
 : dirty! 1 (dirty) c! show! ;
-: norm-mode  0 mode! ;
-: repl-mode  1 mode! ;
+: ->norm  0 mode! ;
+: ->repl  1 mode! ;  : repl? mode@ 1 = ;
 : quit?  mode@ 99 = ;
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
@@ -192,18 +198,41 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
-: .foot ->foot ." Block #" blk @ . lpar row@ (.) ',' emit col@ (.) rpar ;
-: printable? ( c--f ) dup >a 31 >  a> 127 < and ;
-: replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then ;
+: .foot ->foot ." Block #" blk @ .
+   bl dirty? if drop '*' then emit space
+   lpar row@ (.) ',' emit col@ (.) rpar
+   repl? if red ."  -replace-" white then clr-eol ;
+: printable? ( c--f ) dup  31 >  swap 127 < and ;
+: replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then
+   a@ 27 = if ->norm then ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
-: ed-process-key ( -- )
-   a@ 'h' = if  0 -1 mv exit then
-   a@ 'j' = if  1  0 mv exit then
-   a@ 'k' = if -1  0 mv exit then
-   a@ 'l' = if  0  1 mv exit then
-   a@ 13  = if 1 -99 mv exit then
-   a@  3  = if 99 mode! exit then
-   replace-char ;
+: mv-lt 0 dup 1-      mv ;   : mv-rt 0 1 mv ;
+: mv-up 0 dup 1- swap mv ;   : mv-dn 1 0 mv ;
+: ed-quit 99 mode! ;
+: ins-bl  dirty!  ed-block block-sz + 1- >a  rc->pos >t
+   begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
+: del-ch  dirty!  ed-block block-sz + 1- >a  rc->pos >t
+   begin t@ 1+ c@ !t+ t@ a@ < while bl t> c! adrop ;
+: kte ( key-table entry ) drop swap vc, v, ;
+
+vhere const key-table
+'h'  find mv-lt   kte
+'j'  find mv-dn   kte
+'k'  find mv-up   kte
+'l'  find mv-rt   kte
+'b'  find ins-bl  kte
+'x'  find del-ch  kte
+'R'  find ->repl  kte
+27   find ->norm  kte
+ 3   find ed-quit kte
+0 0 0 kte
+
+: ktp ( key-table process ) key-table >t begin
+      @t if0 tdrop exit then
+      @t+ a@ = if  t> @ >r exit then
+      t@ cell+ t!
+   again tdrop ;
+: ed-process-key ( -- ) repl? if replace-char exit then ktp ;
 : ed-loop begin show key >a ed-process-key adrop quit? until ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
