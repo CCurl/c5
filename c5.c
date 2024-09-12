@@ -200,13 +200,12 @@ int isNum(const char *w) {
 	if (w[0]=='%') { b=2; w++; }
 	if (w[0]=='-') { isNeg=1; w++; }
 	if (w[0]==0) { return 0; }
-	char c = *(w++);
+	char c = lower(*(w++));
 	while (c) {
-		if ((b==2) && btwi(c,'0','0')) { n = (n*b)+(c-'0'); }
-		else if (btwi(c,'0','9')) { n = (n*b)+(c-'0'); }
+		if (btwi(c,'0','0'+b-1) && (c<='9')) { n = (n*b)+(c-'0'); }
 		else if ((b==16) && btwi(c,'a','f')) { n = (n*b)+(c-'a'+10); }
 		else { return 0; }
-		c = *(w++);
+		c = lower(*(w++));
 	}
 	push(isNeg ? -n : n);
 	return 1;
