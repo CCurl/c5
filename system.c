@@ -66,7 +66,7 @@ cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, S
 
 void repl() {
 	ttyMode(0);
-	zType(" ok\n");
+	zType(state ? " ... "  : " ok\n");
 	char tib[256];
 	if (fgets(tib, 256, stdin) != tib) { exit(0); }
 	outer(tib);

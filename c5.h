@@ -51,7 +51,7 @@ extern int  outer(const char *src);
 extern void Init();
 
 // c5.c needs these to be defined
-extern cell outputFp;
+extern cell state, outputFp;
 extern byte vars[];
 extern void zType(const char *str);
 extern void emit(const char ch);
