@@ -6,6 +6,19 @@ c5 is comprised of 4 files:
 - system.c
 - boot.c5
 
+## Building c5
+Building c5 is simple and fast since there are only 2 small source files. On Linux, there is a makefile, which uses `clang`, but it can also be built with `gcc` if that is your preferred compiler - simply tweak the makefile. Or you can easily build it from the command line:
+
+```
+gcc -m64 -O3 -o c5 *.c
+
+or
+
+clang -m64 -O3 -o c5 *.c
+```
+
+For Windows, there is a `c5.sln` file for Visual Studio.
+
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
 - Linux 32-bit (-m32): a CELL is 32-bits.
@@ -15,9 +28,9 @@ A `CELL` is either 32-bits or 64-bits, depending on the target system.
 
 ## c5 memory areas
 c5 provides 3 memory areas:
-- code
-- variables
-- dictionary entries
+- code (default size: 64k - see `MAX_CODE`)
+- variables (default size: 2 million - see `MAX_VARS`)
+- dictionary entries (default size: 2500 entries - see `MAX_DICT`)
 
 Built-in words for the memory areas
 
@@ -32,12 +45,12 @@ Built-in words for the memory areas
 
 ## c5 Strings
 Strings in c5 are NULL terminated, not counted.<br/>
-Of course, counted strings can be added if desired.<br/>
+Of course, counted strings can be implemented if desired.<br/>
 
 ## The A and T Stacks
-c5 includes 2 additionl stacks, A and T.<br/>
+c5 includes 2 additional stacks, A and T.<br/>
 Note that the return stack also has some additional operations.<br/>
-The size of these stacks is configurable (see `TSTK_SZ`).<br/>
+The size of these stacks is configurable (default 64 - see `TSTK_SZ`).<br/>
 They can be used for any purpose.<br/>
 
 ## c5 primitives
@@ -45,31 +58,32 @@ NOTE: To add custom primitives, add X() entries to the `PRIMS` macro in file `c5
 
 Stack effect notation conventions:
 
-| TERM     | DESCRIPTION |
-|:--       |:-- |
-| SZ/NM/MD | String, uncounted, NULL terminated |
-| A        | Address |
-| C        | Number, 8-bits |
-| W        | Number, 16-bits |
-| N/X/Y    | Number, CELL sized |
-| F        | Flag: 0 mean0 false, <>0 means true |
-| R        | Register number |
-| FH       | File handle: 0 means no file |
-| I        | For loop index counter |
+| TERM      | DESCRIPTION |
+|:--        |:-- |
+| S/D/NM/MD | String, uncounted, NULL terminated |
+| A         | Address |
+| B,C       | Byte/Char, 8-bits |
+| W         | Number, 16-bits |
+| N/X/Y     | Number, CELL sized |
+| F         | Flag: 0 means false, <>0 means true |
+| FH        | File handle: 0 means no file |
+| I         | For loop index counter |
 
-The primitives:
+The opcodes/primitives:
 
 | WORD      | STACK        | DESCRIPTION |
 |:--        |:--           |:-- |
 | (lit1)    | (--N)        | N: opcode for LIT1 primitive |
 | (lit2)    | (--N)        | N: opcode for LIT2 primitive |
 | (lit4)    | (--N)        | N: opcode for LIT4 primitive |
-| (jmp)     | (--W)        | W: opcode for JMP primitive |
-| (jmpz)    | (--W)        | W: opcode for JMPZ primitive |
-| (jmpnz)   | (--W)        | W: opcode for JMPNZ primitive |
-| (njmpz)   | (--W)        | W: opcode for NJMPZ primitive |
-| (njmpnz)  | (--W)        | W: opcode for NJMPNZ primitive |
-| (exit)    | (--W)        | W: opcode for EXIT primitive |
+| (jmp)     | (--N)        | N: opcode for JMP primitive |
+| (jmpz)    | (--N)        | N: opcode for JMPZ primitive |
+| (jmpnz)   | (--N)        | N: opcode for JMPNZ primitive |
+|           |              | **NOTE: `JMPZ` and `JMPNZ` POP the stack|
+| (njmpz)   | (--N)        | N: opcode for NJMPZ primitive |
+| (njmpnz)  | (--N)        | N: opcode for NJMPNZ primitive |
+|           |              | **NOTE: `NJMPZ` and `NJMPNZ` do NOT POP the stack|
+| (exit)    | (--N)        | N: opcode for EXIT primitive |
 | exit      | (--)         | EXIT word |
 | dup       | (X--X X)     | Duplicate TOS (Top-Of-Stack) |
 | swap      | (X Y--Y X)   | Swap TOS and NOS (Next-On-Stack) |
@@ -91,14 +105,14 @@ The primitives:
 | <         | (X Y--F)     | F: 1 if (X < Y), else 0 |
 | =         | (X Y--F)     | F: 1 if (X = Y), else 0 |
 | >         | (X Y--F)     | F: 1 if (X > Y), else 0 |
-| 0=        | (N--F)       | F: 1 if (N=0), else 0 |
+| 0=        | (N--F)       | F: 1 if (N = 0), else 0 |
 | and       | (X Y--N)     | N: X AND Y |
 | or        | (X Y--N)     | N: X OR  Y |
 | xor       | (X Y--N)     | N: X XOR Y |
 | com       | (X--Y)       | Y: X with all bits flipped (complement) |
-| for       | (N--)        | Begin FOR loop with bounds 0 and N. |
+| for       | (N--)        | Begin a FOR loop with bounds 0 and N. |
 | i         | (--I)        | I: Current FOR loop index. |
-| next      | (--)         | Increment I. If I < N, start loop again, else exit. |
+| next      | (--)         | Increment I. If (I < N), start loop again, else exit. |
 | >r        | (N--)        | Move TOS to the return stack |
 | r@        | (--N)        | N: return stack TOS |
 | r@+       | (--N)        | N: return stack TOS, then increment it |
@@ -123,18 +137,17 @@ The primitives:
 | ;         | (--)         | Compile EXIT, set STATE=0 |
 | outer     | (S--)        | Parse S using the outer interpreter |
 | addword   | (--)         | Add the next word to the dictionary |
-| find      | (--W A)      | W: Execution Token, A: Dict Entry address (0 0 if not found) |
+| find      | (--X A)      | X: Execution Token, A: Dict Entry address (0 0 if not found) |
 | timer     | (--N)        | N: Current time |
-| ztype     | (SZ--)       | Print string at SZ (uncounted, unformatted) |
+| ztype     | (S--)        | Print string at S (uncounted, unformatted) |
 | fopen     | (NM MD--FH)  | NM: File Name, MD: Mode, FH: File Handle (0 if error/not found) |
 | fclose    | (FH--)       | FH: File Handle to close |
 | fread     | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars read |
 | fwrite    | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars written |
 | fseek     | (N FH--)     | Set current file offset to N for file FH |
-| load      | (N--)        | N: Block number to load (file named "block-NNN.c5") |
-| system    | (S--)        | SC: String to send to `system()` |
+| system    | (S--)        | S: String to send to `system()` |
 | s-cpy     | (D S--D)     | Copy string S to D |
-| s-eqi     | (D S--F)     | String compare F: 1 if S and are the same (case-insensitive) |
+| s-eqi     | (D S--F)     | String compare F: 1 if S and D are the same (case-insensitive) |
 | s-len     | (S--N)       | N: length of string S |
 | fill      | (A B N--)    | Fill N bytes with B starting at address A |
 | bye       | (--)         | Exit c5 |
