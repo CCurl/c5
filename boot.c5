@@ -82,9 +82,12 @@ const -ha-
 : .  ( n-- ) (.) space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
-: .hex ( n-- ) base @ >t 16 base ! .2 t> base ! ;
-: .dec ( n-- ) base @ >t 10 base ! .3 t> base ! ;
-: .bin ( n-- ) base @ >t  2 base ! .  t> base ! ;
+: hex     $10 base ! ;
+: decimal #10 base ! ;
+: binary  %10 base ! ;
+: .hex ( n-- ) base @ >t hex     .2 t> base ! ;
+: .dec ( n-- ) base @ >t decimal .3 t> base ! ;
+: .bin ( n-- ) base @ >t binary  .  t> base ! ;
 
 : execute ( xt-- ) >r ;
 : :noname here 1 state ! ;
@@ -253,12 +256,19 @@ vhere const key-table
 
 ( temp for testing )
 
-: dump    ( f t-- ) >t >a begin @a+ .    a@ t@ > until atdrop ;
-: hexdump ( f t-- ) >t >a begin @a+ .hex a@ t@ > until atdrop ;
-
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
 : lg " lazygit" system ;
 : ls " ls -l" system ;
 : pwd " pwd" system ;
+
+( ... from Peter Jakacki )
+: aemit ( b-- ) dup $20 < over $7f > or if drop '.' then emit ;
+: .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
+: dump ( f n-- ) swap >a 0 swap
+   for
+      dup $0f and if0 cr a@ .hex ." : " then
+      @a+ .hex
+      1+ dup $0f and if0 ."    " .ascii then
+   next drop adrop ;
