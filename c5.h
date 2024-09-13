@@ -5,10 +5,6 @@
 #define IS_WINDOWS 1
 #endif
 
-#ifdef __linux__
-#define IS_LINUX   1
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
