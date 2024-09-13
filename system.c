@@ -9,7 +9,8 @@ void ttyMode(int isRaw) {}
 
 #endif
 
-#ifdef IS_LINUX // Support for Linux
+// Support for Linux, OpenBSD, FreeBSD
+#if defined(__linux__) || defined(__OpenBSD__) || defined(__FreeBSD__)
 
 #include <termios.h>
 #include <unistd.h>
@@ -52,7 +53,7 @@ int key() {
 	return x;
 }
 
-#endif // IS_LINUX
+#endif // Linux, OpenBSD, FreeBSD
 
 cell timer() { return (cell)clock(); }
 void zType(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }

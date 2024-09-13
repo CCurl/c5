@@ -7,7 +7,15 @@ c5 is comprised of 4 files:
 - boot.c5
 
 ## Building c5
-Building c5 is simple and fast since there are only 2 small source files. On Linux, there is a makefile, which uses `clang`, but it can also be built with `gcc` if that is your preferred compiler - simply tweak the makefile. Or you can easily build it from the command line:
+Building c5 is simple and fast since there are only 2 small source files.
+
+For Windows, there is a `c5.sln` file for Visual Studio.
+
+For Linux, there is a makefile, which uses `clang`, but it can also be built with `gcc` if that is your preferred compiler - simply tweak the makefile.
+
+For OpenBSD and FreeBSD, use `gmake`.
+
+Or you can easily build it from the command line:
 
 ```
 gcc -m64 -O3 -o c5 *.c
@@ -16,8 +24,6 @@ or
 
 clang -m64 -O3 -o c5 *.c
 ```
-
-For Windows, there is a `c5.sln` file for Visual Studio.
 
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
