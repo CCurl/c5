@@ -82,9 +82,12 @@ const -ha-
 : .  ( n-- ) (.) space ;
 : .2 ( n-- ) <# # #s #> ztype space ;
 : .3 ( n-- ) <# # # #s #> ztype space ;
-: .hex ( n-- ) base @ >t 16 base ! .2 t> base ! ;
-: .dec ( n-- ) base @ >t 10 base ! .3 t> base ! ;
-: .bin ( n-- ) base @ >t  2 base ! .  t> base ! ;
+: hex     $10 base ! ;
+: decimal #10 base ! ;
+: binary  %10 base ! ;
+: .hex ( n-- ) base @ >t hex     .2 t> base ! ;
+: .dec ( n-- ) base @ >t decimal .3 t> base ! ;
+: .bin ( n-- ) base @ >t binary  .  t> base ! ;
 
 : execute ( xt-- ) >r ;
 : :noname here 1 state ! ;
@@ -125,7 +128,7 @@ const -ha-
     a@ .de-word a@ de-sz + a!
     a@ dict-end < while lpar t> 1- . ." words)" adrop ;
 
-( memory / strings )
+( memory )
 : fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
 : cmove ( src dst n-- ) >r >t >a
     r> ?dup if for @a+ !t+ next then
@@ -134,12 +137,12 @@ const -ha-
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
 
+( strings )
 : s-end  ( str--end )     dup s-len + ; inline
 : s-cat  ( dst src--dst ) over s-end swap s-cpy drop ;
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
 : p ( --a ) vhere 100 + ;
-
 
 ( screen )
 : csi       ( -- )    27 emit '[' emit ;
@@ -213,7 +216,9 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
 : del-ch  dirty!  ed-block block-sz + 1- >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while bl t> c! adrop ;
-: kte ( key-table entry ) drop swap vc, v, ;
+
+( kte: key-table entry )
+: kte ( ch xt dp-- ) drop swap vc, v, ;
 
 vhere const key-table
 'h'  find mv-lt   kte
@@ -227,11 +232,13 @@ vhere const key-table
  3   find ed-quit kte
 0 0 0 kte
 
-: ktp ( key-table process ) key-table >t begin
+( ktp: key-table process )
+: ktp ( -- ) key-table >t begin
       @t if0 tdrop exit then
       @t+ a@ = if  t> @ >r exit then
       t@ cell+ t!
    again tdrop ;
+
 : ed-process-key ( -- ) repl? if replace-char exit then ktp ;
 : ed-loop begin show key >a ed-process-key adrop quit? until ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
@@ -253,12 +260,19 @@ vhere const key-table
 
 ( temp for testing )
 
-: dump    ( f t-- ) >t >a begin @a+ .    a@ t@ > until atdrop ;
-: hexdump ( f t-- ) >t >a begin @a+ .hex a@ t@ > until atdrop ;
-
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
 : lg " lazygit" system ;
 : ls " ls -l" system ;
 : pwd " pwd" system ;
+
+( ... from Peter Jakacki )
+: aemit ( b-- ) dup $20 < over $7f > or if drop '.' then emit ;
+: .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
+: dump ( f n-- ) swap >a 0 swap
+   for
+      dup $0f and if0 cr a@ .hex ." : " then
+      @a+ .hex
+      1+ dup $0f and if0 ."    " .ascii then
+   next drop adrop ;

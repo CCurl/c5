@@ -5,10 +5,6 @@
 #define IS_WINDOWS 1
 #endif
 
-#ifdef __linux__
-#define IS_LINUX   1
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -51,7 +47,7 @@ extern int  outer(const char *src);
 extern void Init();
 
 // c5.c needs these to be defined
-extern cell outputFp;
+extern cell state, outputFp;
 extern byte vars[];
 extern void zType(const char *str);
 extern void emit(const char ch);
