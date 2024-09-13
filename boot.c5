@@ -163,11 +163,16 @@ const -ha-
 : cyan   36 fg ;      : grey   37 fg ;
 
 ( blocks )
-: disk-sz 1000000 ;
-: block-sz 2000 ; inline
-disk-sz block-sz / 1- const max-block
-vars vars-sz + disk-sz - const disk
-: ->block   ( n--a )  block-sz * disk + ;
+: block-max   499 ; inline
+: block-sz   2000 ; inline
+: disk-sz block-max 1+ block-sz * ;
+: disk vars vars-sz + disk-sz - ;
+: ->block   ( n--a )  block-max min block-sz * disk + ;
+: disk-read " disk.c5" " rb" fopen ?dup
+   if >a disk disk-sz a@ fread  a> fclose then ;
+: disk-flush " disk.c5" " wb" fopen ?dup
+   if >a disk disk-sz a@ fwrite  a> fclose then ;
+disk-read
 
 cell var blk
 : rows 25 ; inline
@@ -194,9 +199,9 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : quit?  mode@ 99 = ;
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
-: .edch ( a-- ) c@ 32 max emit ;
+: aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
-      .b2  cols for a@+ .edch next  .b2 cr
+      .b2  cols for @a+ aemit next  .b2 cr
    next .b1 adrop ;
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
@@ -215,7 +220,7 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : ins-bl  dirty!  ed-block block-sz + 1- >a  rc->pos >t
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
 : del-ch  dirty!  ed-block block-sz + 1- >a  rc->pos >t
-   begin t@ 1+ c@ !t+ t@ a@ < while bl t> c! adrop ;
+   begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
 
 ( kte: key-table entry )
 : kte ( ch xt dp-- ) drop swap vc, v, ;
@@ -254,9 +259,27 @@ vhere const key-table
       t> >in !
    then ;
 
-( temp words )
+( ... from Peter Jakacki )
+: .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
+: dump ( f n-- ) swap >a 0 >t
+   for
+      t@ if0 cr a@ .hex ." : " then
+      @a+ .hex
+      t@+ $0e = if ."    " .ascii 0 t! then
+   next drop atdrop ;
+( fg: forget-one )
+: fg last dup de-sz + (la) ! @ (ha) ! ;  
+
+cell var fgh
+cell var fgl
+cell var fgv
+: marker here fgh ! last fgl ! vhere fgv ! ;
+: forget fgh @ (ha) ! fgl @ (la) ! fgv @ (vha) ! ;
+
 : .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
 .ver ." hello"
+
+marker
 
 ( temp for testing )
 
@@ -266,13 +289,3 @@ vhere const key-table
 : lg " lazygit" system ;
 : ls " ls -l" system ;
 : pwd " pwd" system ;
-
-( ... from Peter Jakacki )
-: aemit ( b-- ) dup $20 < over $7f > or if drop '.' then emit ;
-: .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
-: dump ( f n-- ) swap >a 0 swap
-   for
-      dup $0f and if0 cr a@ .hex ." : " then
-      @a+ .hex
-      1+ dup $0f and if0 ."    " .ascii then
-   next drop adrop ;
