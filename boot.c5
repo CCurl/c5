@@ -186,8 +186,11 @@ cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : norm-row ( -- ) row@ 0 max rows 1- min row! ;
 : norm-col ( -- ) col@ 0 max cols 1- min col! ;
+: norm-pos ( pos--new ) ed-block max ed-block block-sz + 1- min ;
 : mv ( r c-- )  (c) +! (r) +! norm-row norm-col ;
 : rc->pos ( --pos ) row@ cols * col@ + ed-block + ;
+: pos->rc ( pos-- ) norm-pos ed-block - cols /mod row! col! ;
+: mv ( r c-- )  (c) +! (r) +! rc->pos  pos->rc ;
 1 var (mode)             : mode@   (mode)  c@ ;
 1 var (show)             : show?   (show)  c@ ;
 1 var (dirty)            : dirty?  (dirty) c@ ;
@@ -208,8 +211,9 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : ->cmd ->foot cr ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
-   lpar row@ (.) ',' emit col@ (.) rpar
-   repl? if red ."  -replace-" white then clr-eol ;
+   lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
+   repl? if red ."  -replace-" white then space
+   lpar rc->pos c@ (.) rpar clr-eol ;
 : printable? ( c--f ) dup  31 >  swap 127 < and ;
 : replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then
    a@ 27 = if ->norm then ;
@@ -221,6 +225,8 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
 : del-ch  dirty!  ed-block block-sz + 1- >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
+: next-pg ed->block  blk @ 1+       blk ! block->ed show! clean ;
+: prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
 
 ( kte: key-table entry )
 : kte ( ch xt dp-- ) drop swap vc, v, ;
@@ -233,6 +239,8 @@ vhere const key-table
 'b'  find ins-bl  kte
 'x'  find del-ch  kte
 'R'  find ->repl  kte
+'+'  find next-pg kte
+'-'  find prev-pg kte
 27   find ->norm  kte
  3   find ed-quit kte
 0 0 0 kte
