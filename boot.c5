@@ -182,13 +182,15 @@ cell var blk
 block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
+: last-ch ( --a ) ed-block block-sz + 1- ;
 cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : norm-row ( -- ) row@ 0 max rows 1- min row! ;
 : norm-col ( -- ) col@ 0 max cols 1- min col! ;
-: norm-pos ( pos--new ) ed-block max ed-block block-sz + 1- min ;
+: norm-pos ( pos--new ) ed-block max last-ch min ;
 : mv ( r c-- )  (c) +! (r) +! norm-row norm-col ;
-: rc->pos ( --pos ) row@ cols * col@ + ed-block + ;
+: cr->pos ( col row--pos ) cols * + ed-block + ;
+: rc->pos ( --pos ) col@ row@ cr->pos ;
 : pos->rc ( pos-- ) norm-pos ed-block - cols /mod row! col! ;
 : mv ( r c-- )  (c) +! (r) +! rc->pos  pos->rc ;
 1 var (mode)             : mode@   (mode)  c@ ;
@@ -199,6 +201,7 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : dirty! 1 (dirty) c! show! ;
 : ->norm  0 mode! ;
 : ->repl  1 mode! ;  : repl? mode@ 1 = ;
+: ->ins   2 mode! ;  : ins?  mode@ 2 = ;
 : quit?  mode@ 99 = ;
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
@@ -212,8 +215,9 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
-   repl? if red ."  -replace-" white then space
-   lpar rc->pos c@ (.) rpar clr-eol ;
+   repl? if red ."  -replace-" white then
+   ins?  if red ."  -insert-"  white then
+   space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
 : printable? ( c--f ) dup  31 >  swap 127 < and ;
 : replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then
    a@ 27 = if ->norm then ;
@@ -221,9 +225,16 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : mv-lt 0 dup 1-      mv ;   : mv-rt 0 1 mv ;
 : mv-up 0 dup 1- swap mv ;   : mv-dn 1 0 mv ;
 : ed-quit 99 mode! ;
-: ins-bl  dirty!  ed-block block-sz + 1- >a  rc->pos >t
+: ins-bl  dirty!  last-ch >a  rc->pos >t
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
-: del-ch  dirty!  ed-block block-sz + 1- >a  rc->pos >t
+: del-ch  dirty!  last-ch >a  rc->pos >t
+   begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
+: clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
+: ins-line  dirty! row@ rows = if clr-line exit then
+   last-ch >a  0 row@ 1+ cr->pos >t
+   begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
+: del-line  dirty!   row@ rows = if clr-line exit then
+   last-ch >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
 : next-pg ed->block  blk @ 1+       blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
@@ -231,18 +242,23 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 ( kte: key-table entry )
 : kte ( ch xt dp-- ) drop swap vc, v, ;
 
+( VI-like commands )
 vhere const key-table
-'h'  find mv-lt   kte
-'j'  find mv-dn   kte
-'k'  find mv-up   kte
-'l'  find mv-rt   kte
-'b'  find ins-bl  kte
-'x'  find del-ch  kte
-'R'  find ->repl  kte
-'+'  find next-pg kte
-'-'  find prev-pg kte
-27   find ->norm  kte
- 3   find ed-quit kte
+'h'  find mv-lt     kte
+'j'  find mv-dn     kte
+'k'  find mv-up     kte
+'l'  find mv-rt     kte
+'b'  find ins-bl    kte
+'x'  find del-ch    kte
+'C'  find clr-line  kte
+'R'  find ->repl    kte
+'I'  find ->ins     kte
+'O'  find ins-line  kte
+'D'  find del-line  kte
+'+'  find next-pg   kte
+'-'  find prev-pg   kte
+27   find ->norm    kte
+ 3   find ed-quit   kte
 0 0 0 kte
 
 ( ktp: key-table process )
@@ -291,6 +307,7 @@ marker
 
 ( temp for testing )
 
+: boot->disk vars 10000 + disk 9999 cmove ;
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
