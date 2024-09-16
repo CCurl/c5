@@ -1,35 +1,17 @@
-app := c5
-app32 := c5-32
+ARCH ?= 64
+CFLAGS = -O3 -m($ARCH)
 
-CXX := clang
-CXXFLAGS := -m64 -O3
-C32FLAGS := -m32 -O3
+c5: c5.c c5.h system.c
+	$(CC) $(CFLAGS) c5.c system.c -o $@
 
-srcfiles := $(shell find . -name "*.c")
-incfiles := $(shell find . -name "*.h")
-LDLIBS   := -lm
-
-all: $(app)
-
-$(app): $(srcfiles) $(incfiles)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $(app) $(srcfiles) $(LDLIBS)
-	ls -l $(app)
-
-$(app32): $(srcfiles) $(incfiles)
-	$(CXX) $(C32FLAGS) $(LDFLAGS) -o $(app32) $(srcfiles) $(LDLIBS)
-	ls -l $(app32)
+run: c5
+	./c5
 
 clean:
-	rm -f $(app) $(app32)
+	rm -f c5
 
-test: $(app)
-	./$(app) block-200.c5
+test: c5
+	./c5 block-200.c5
 
-run: $(app)
-	./$(app)
-
-run32: $(app32)
-	./$(app32)
-
-bin: $(app)
-	cp -u -p $(app) ~/bin/
+bin: c5
+	cp -u -p c5 ~/bin/
