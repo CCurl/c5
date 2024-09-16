@@ -1,19 +1,30 @@
 # c5: A full-featured Forth for Windows and Linux in 4 files
 
 c5 is comprised of 4 files:
-- c5.c
-- c5.h
-- system.c
-- boot.c5
+- c5.c      - (The VM)
+- c5.h      - (Definitions)
+- system.c  - (System-specific support)
+- boot.c5   - (The Forth source code)
+
+**Note:** The default boot.c5 is just what I use for interactive use.<br/>
+You are 100% free to modify it in any way you desire for your own purposes.<br/>
 
 ## Building c5
 Building c5 is simple and fast since there are only 2 small source files.
 
 For Windows, there is a `c5.sln` file for Visual Studio.
 
-For Linux, there is a makefile, which uses `clang`, but it can also be built with `gcc` if that is your preferred compiler - simply tweak the makefile.
+For Linux, OpenBSD, and FreeBSD, there is a makefile, which uses the system C compiler (specified by the CC variable). Example:
 
-For OpenBSD and FreeBSD, use `gmake`.
+```
+# default, 64 bit:
+make
+
+or
+
+# for 64 bit:
+ARCH=32 make
+```
 
 Or you can easily build it from the command line:
 
@@ -27,10 +38,10 @@ clang -m64 -O3 -o c5 *.c
 
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
-- Linux 32-bit (-m32): a CELL is 32-bits.
 - Linux 64-bit (-m64): a CELL is 64-bits.
-- Windows 32-bit (x86): a CELL is 32-bits.
+- Linux 32-bit (-m32): a CELL is 32-bits.
 - Windows 64-bit (x64): a CELL is 64-bits.
+- Windows 32-bit (x86): a CELL is 32-bits.
 
 ## c5 memory areas
 c5 provides 3 memory areas:
