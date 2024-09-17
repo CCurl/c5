@@ -1,5 +1,5 @@
 ARCH ?= 64
-CFLAGS = -O3 -m($ARCH)
+CFLAGS = -O3 -m$(ARCH)
 
 c5: c5.c c5.h system.c
 	$(CC) $(CFLAGS) c5.c system.c -o $@
