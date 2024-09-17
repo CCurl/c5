@@ -36,6 +36,12 @@ or
 clang -m64 -O3 -o c5 *.c
 ```
 
+## c5 startup activities
+
+When c5 starts, it looks for a filename as the 1st and only argument.<br/>
+If a filename is found, and it can open that file, then that becomes the source file.<br/>
+If no filename is given, c5 tries to open and use `boot.c5` as the source file.<br/>
+
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
 - Linux 64-bit (-m64): a CELL is 64-bits.
@@ -90,17 +96,17 @@ The opcodes/primitives:
 
 | WORD      | STACK        | DESCRIPTION |
 |:--        |:--           |:-- |
-| (lit1)    | (--N)        | N: opcode for LIT1 primitive |
-| (lit2)    | (--N)        | N: opcode for LIT2 primitive |
-| (lit4)    | (--N)        | N: opcode for LIT4 primitive |
-| (jmp)     | (--N)        | N: opcode for JMP primitive |
-| (jmpz)    | (--N)        | N: opcode for JMPZ primitive |
-| (jmpnz)   | (--N)        | N: opcode for JMPNZ primitive |
+| (lit1)    | (--N)        | N: opcode value for the LIT1 primitive |
+| (lit2)    | (--N)        | N: opcode value for the LIT2 primitive |
+| (lit4)    | (--N)        | N: opcode value for the LIT4 primitive |
+| (jmp)     | (--N)        | N: opcode value for the JMP primitive |
+| (jmpz)    | (--N)        | N: opcode value for the JMPZ primitive |
+| (jmpnz)   | (--N)        | N: opcode value for the JMPNZ primitive |
 |           |              | **NOTE: `JMPZ` and `JMPNZ` POP the stack|
-| (njmpz)   | (--N)        | N: opcode for NJMPZ primitive |
-| (njmpnz)  | (--N)        | N: opcode for NJMPNZ primitive |
+| (njmpz)   | (--N)        | N: opcode value for the NJMPZ primitive |
+| (njmpnz)  | (--N)        | N: opcode value for the NJMPNZ primitive |
 |           |              | **NOTE: `NJMPZ` and `NJMPNZ` do NOT POP the stack|
-| (exit)    | (--N)        | N: opcode for EXIT primitive |
+| (exit)    | (--N)        | N: opcode value for the EXIT primitive |
 | exit      | (--)         | EXIT word |
 | dup       | (X--X X)     | Duplicate TOS (Top-Of-Stack) |
 | swap      | (X Y--Y X)   | Swap TOS and NOS (Next-On-Stack) |
@@ -168,3 +174,40 @@ The opcodes/primitives:
 | s-len     | (S--N)       | N: length of string S |
 | fill      | (A B N--)    | Fill N bytes with B starting at address A |
 | bye       | (--)         | Exit c5 |
+
+## c5 Built-in words
+
+There are very few default words in addition to the above primitives.<br/>
+This is because of a desire to give the programmer as much freedom as possible.<br/>
+Any system desired can be built from the primitives and the source file.<br/>
+The default source file, `boot.c5` is simply the system I start with.<br/>
+
+| WORD      | STACK        | DESCRIPTION |
+|:--        |:--           |:-- |
+| (ha)      | ( --A )      | A: The address of the HERE variable |
+| (vha)     | ( --A )      | A: The address of the VHERE variable |
+| (la)      | ( --A )      | A: The address of the LAST variable |
+| base      | ( --A )      | A: The address of the BASE variable |
+| state     | ( --A )      | A: The address of the STATE variable |
+| >in       | ( --A )      | A: The address of the >in variable |
+| (dsp)     | ( --A )      | A: The address of the data stack pointer |
+| dstk      | ( --A )      | A: The address of the data stack |
+| (rsp)     | ( --A )      | A: The address of the return stack stack pointer |
+| rstk      | ( --A )      | A: The address of the return stack |
+| (tsp)     | ( --A )      | A: The address of the T stack pointer |
+| tstk      | ( --A )      | A: The address of the T stack |
+| (asp)     | ( --A )      | A: The address of the A stack pointer |
+| astk      | ( --A )      | A: The address of the A stack |
+| (lsp)     | ( --A )      | A: The address of the loop stack pointer |
+| lstk      | ( --A )      | A: The address of the loop stack |
+| code      | ( --A )      | A: The address of the CODE area |
+| vars      | ( --A )      | A: The address of the VARS area |
+| dict      | ( --A )      | A: The address of the DICT area |
+| code-sz   | ( --N )      | N: The size of the CODE area |
+| vars-sz   | ( --N )      | N: The size of the VARS area |
+| dict-sz   | ( --N )      | N: The size of the DICT area |
+| de-sz     | ( --N )      | N: The size of the a dictionary entry |
+| stk-sz    | ( --N )      | N: The size of the data and return stacks |
+| tstk-sz   | ( --N )      | N: The size of the A and T stacks |
+| lstk-sz   | ( --N )      | N: The size of the loop stack |
+| cell      | ( --N )      | N: The size of a CELL |
