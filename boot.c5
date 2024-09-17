@@ -36,6 +36,7 @@ const -ha-
 : !a- a@- c! ; inline
 : @t  t@  c@ ; inline
 : @t+ t@+ c@ ; inline
+: @t- t@- c@ ; inline
 : !t+ t@+ c! ; inline
 : !t- t@- c! ; inline
 : adrop  a> drop ; inline
@@ -161,6 +162,7 @@ const -ha-
 : green  32 fg ;      : yellow 33 fg ;
 : blue   34 fg ;      : purple 35 fg ;
 : cyan   36 fg ;      : grey   37 fg ;
+: colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( blocks )
 : block-max   499 ; inline
@@ -185,10 +187,7 @@ block-sz var ed-block
 : last-ch ( --a ) ed-block block-sz + 1- ;
 cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
-: norm-row ( -- ) row@ 0 max rows 1- min row! ;
-: norm-col ( -- ) col@ 0 max cols 1- min col! ;
 : norm-pos ( pos--new ) ed-block max last-ch min ;
-: mv ( r c-- )  (c) +! (r) +! norm-row norm-col ;
 : cr->pos ( col row--pos ) cols * + ed-block + ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
 : pos->rc ( pos-- ) norm-pos ed-block - cols /mod row! col! ;
@@ -215,27 +214,31 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
-   repl? if red ."  -replace-" white then
-   ins?  if red ."  -insert-"  white then
+   repl? if yellow ."  -replace-" white then
+   ins?  if purple ."  -insert-"  white then
    space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
 : printable? ( c--f ) dup  31 >  swap 127 < and ;
-: replace-char ( -- ) a@ printable? if a@ rc->pos c! 0 1 mv dirty! then
-   a@ 27 = if ->norm then ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-lt 0 dup 1-      mv ;   : mv-rt 0 1 mv ;
 : mv-up 0 dup 1- swap mv ;   : mv-dn 1 0 mv ;
 : ed-quit 99 mode! ;
 : ins-bl  dirty!  last-ch >a  rc->pos >t
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
+: replace-char ( -- ) a@ printable? if a@ rc->pos c! mv-rt dirty! then ;
+: insert-char  ( -- ) a@ printable? if ins-bl replace-char then ;
 : del-ch  dirty!  last-ch >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
-: ins-line  dirty! row@ rows = if clr-line exit then
-   last-ch >a  0 row@ 1+ cr->pos >t
-   begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
-: del-line  dirty!   row@ rows = if clr-line exit then
-   last-ch >a  rc->pos >t
-   begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
+: ins-line  row@ rows < if 
+      last-ch >a  a@ cols - >t  0 row@ cr->pos >r
+      begin @t- !a- t@ r@ < until
+      atdrop rdrop
+   then clr-line ;
+: del-line  row@ rows < if
+      0 row@ cr->pos >t  t@ cols + >a  last-ch >r
+      begin @a+ !t+  a@ r@ > until
+      atdrop rdrop
+   then row@  rows 1- row!  clr-line  row! ;
 : next-pg ed->block  blk @ 1+       blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
 
@@ -262,14 +265,17 @@ vhere const key-table
 0 0 0 kte
 
 ( ktp: key-table process )
-: ktp ( -- ) key-table >t begin
+: ktp ( -- ) 
+   a@ 27 = if ->norm exit then
+   ins?  if insert-char exit then
+   repl? if replace-char exit then
+   key-table >t begin
       @t if0 tdrop exit then
       @t+ a@ = if  t> @ >r exit then
       t@ cell+ t!
    again tdrop ;
 
-: ed-process-key ( -- ) repl? if replace-char exit then ktp ;
-: ed-loop begin show key >a ed-process-key adrop quit? until ;
+: ed-loop begin show key >a ktp adrop quit? until ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
@@ -278,8 +284,8 @@ vhere const key-table
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.c5" " rb" fopen ?dup if >a
       vars 10000 + >t 
-      0 t@ 99999 fill 
-      t@ 99999 a@ fread drop a> fclose
+      0 t@ 25000 fill 
+      t@ 25000 a@ fread drop a> fclose
       t> >in !
    then ;
 
@@ -291,6 +297,7 @@ vhere const key-table
       @a+ .hex
       t@+ $0e = if ."    " .ascii 0 t! then
    next drop atdrop ;
+
 ( fg: forget-one )
 : fg last dup de-sz + (la) ! @ (ha) ! ;  
 
@@ -307,10 +314,13 @@ marker
 
 ( temp for testing )
 
-: boot->disk vars 10000 + disk 9999 cmove ;
+: boot->disk vars 10000 + disk 25000 cmove ;
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
+: fib 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
+: fib-bm timer swap fib . elapsed ;
 : lg " lazygit" system ;
 : ls " ls -l" system ;
 : pwd " pwd" system ;
+boot->disk
