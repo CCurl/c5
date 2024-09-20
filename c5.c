@@ -192,7 +192,7 @@ next:
 	}
 }
 
-int isNum(const char *w) {
+int isNumber(const char *w) {
 	cell n=0, b=base, isNeg=0;
 	if ((w[0]==39) && (w[2]==39) && (w[3]==0)) { push(w[1]); return 1; }
 	if (w[0]=='#') { b=10; w++; }
@@ -211,59 +211,56 @@ int isNum(const char *w) {
 	return 1;
 }
 
-int compNum(cell n) {
+int compileNumber(cell n) {
 		if (btwi(n, 0, 0x7f)) { ccomma(LIT1); ccomma((byte)n); }
 		else if (btwi(n, 0, 0x7fff)) { ccomma(LIT2); wcomma((ushort)n); }
 		else { ccomma(LIT4); comma(n); }
 		return 1;
 }
 
-int parseWord(char *w) {
-	// zType("-pw:"); zType(w); zType("-");
-
-	if (isNum(w)) {
-		if (state == 0) { return 1; }
-		return(compNum(pop()));
-	}
-
-	DE_T *dp = findWord(w);
-	if (dp) {
-		if ((state==0) || (dp->flags & 0x01)) {   // Interpret or Immediate
-			byte *y = here+100;
-			*(y++) = CALL;
-			storeCell(y, dp->xt); y += CELL_SZ;
-			*(y) = STOP;
-			inner((cell)here+100);
-			return 1;
-		}
-
-		// Compiling ...
-		if ((dp->flags & 0x02)) {   // Inline
-			byte *y = (byte*)dp->xt;
-			do { ccomma(*(y++)); } while ( *(y) != EXIT );
-		} else {
-			ccomma(CALL); comma(dp->xt);
-		}
-		return 1;
-	}
-
-	return 0;
+int executeWord(DE_T* dp) {
+	byte *h = here+100;
+	*(h) = CALL;
+	storeCell(h+1, dp->xt);
+	*(h+1+CELL_SZ) = STOP;
+	inner((cell)h);
+	return 1;
 }
 
-int outer(const char *src) {
+int compileWord(DE_T *dp) {
+	if (dp->flags & 0x01) { return executeWord(dp); };
+	if ((dp->flags & 0x02)) {   // Inline
+		byte *y = (byte*)dp->xt;
+		do { ccomma(*(y++)); } while (*(y) != EXIT);
+	} else {
+		ccomma(CALL); comma(dp->xt);
+	}
+	return 1;
+}
+
+int outer(const char* src) {
 	toIn = (char*)src;
 	while (nextWord()) {
-		if (!parseWord(wd)) {
-			zType("-nf:["); zType(wd); zType("]-");
-			state=0;
+		// printf("-wd:[%s],(%d)-",wd,state);
+		if (isNumber(wd)) {
+			if (state) { compileNumber(pop()); }
+			continue;
+		}
+		DE_T* dp = findWord(wd);
+		if (!dp) {
+			zType("-["); zType(wd); zType("]?-");
+			state = 0;
 			return 0;
 		}
+		if (state) { compileWord(dp); }
+		else { executeWord(dp); }
+		continue;
 	}
 	return 1;
 }
 
 void defNum(const char *name, cell val) {
-	addWord(name); compNum(val); ccomma(EXIT);
+	addWord(name); compileNumber(val); ccomma(EXIT);
 }
 
 void baseSys() {
