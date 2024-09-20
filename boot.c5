@@ -309,6 +309,19 @@ cell var fgv
 marker
 
 ( temp for testing )
+vhere const wd 32 allot
+vhere const wd-in cell allot
+
+: skip-ws ( p1--p2 ) 
+   begin
+      dup c@ ?dup if0 exit then
+      32 > if exit then 1+ 
+   again ;
+: next-wd ( p1 wd--p2 ) >t skip-ws >a
+   begin
+      @a 33 < if 0 !t a@ atdrop exit then
+      @a+ !t+
+   again ;
 
 : boot->disk vars 10000 + disk 25000 cmove ;
 : mil 1000 dup * * ;
