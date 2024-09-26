@@ -272,7 +272,7 @@ vhere const ed-cases
       t@ cell+ t!
    again tdrop ;
 
-: process-key ( --)
+: process-key ( -- )
    a@ 27 = if ->norm exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
@@ -291,7 +291,7 @@ vhere const ed-cases
       t> >in !
    then ;
 
-( ... from Peter Jakacki )
+( this dump is from Peter Jakacki )
 : .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t
    for
@@ -301,13 +301,14 @@ vhere const ed-cases
    next drop atdrop ;
 
 ( fg: forget-one )
-: fg last dup de-sz + (la) ! @ (ha) ! ;  
+: fg last dup de>xt (ha) ! de-sz + (la) ! ;
 
-cell var fgh
-cell var fgl
-cell var fgv
-: marker here fgh ! last fgl ! vhere fgv ! ;
-: forget fgh @ (ha) ! fgl @ (la) ! fgv @ (vha) ! ;
+( marker / forget )
+cell var fg-h
+cell var fg-l
+cell var fg-v
+: marker here fg-h ! last fg-l ! vhere fg-v ! ;
+: forget fg-h @ (ha) ! fg-l @ (la) ! fg-v @ (vha) ! ;
 
 : .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
 .ver ." hello"
