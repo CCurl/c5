@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20240920
+#define VERSION     20240926
 
 #define MAX_CODE    0x00FFFF
 #define MAX_VARS    1999999
@@ -60,5 +60,6 @@ extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);
 extern cell fWrite(cell buf, cell sz, cell fh);
 extern cell fSeek(cell fh, cell offset);
+extern cell fDelete(const char *name);
 
 #endif //  __C5_H__

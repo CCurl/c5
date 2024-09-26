@@ -107,17 +107,16 @@ The opcodes/primitives:
 | (njmpnz)  | (--N)        | N: opcode value for the NJMPNZ primitive |
 |           |              | **NOTE: `NJMPZ` and `NJMPNZ` do NOT POP the stack|
 | (exit)    | (--N)        | N: opcode value for the EXIT primitive |
-| exit      | (--)         | EXIT word |
 | dup       | (X--X X)     | Duplicate TOS (Top-Of-Stack) |
 | swap      | (X Y--Y X)   | Swap TOS and NOS (Next-On-Stack) |
 | drop      | (N--)        | Drop TOS |
 | over      | (N X--N X N) | Push NOS |
-| c@        | (A--C)       | C: the CHAR at address A |
-| w@        | (A--W)       | W: the WORD at address A |
 | @         | (A--N)       | N: the CELL at address A |
-| c!        | (C A--)      | Store CHAR C to address A |
-| w!        | (W A--)      | Store WORD W to address A |
 | !         | (N A--)      | Store CELL N to address A |
+| c@        | (A--C)       | C: the CHAR at address A |
+| c!        | (C A--)      | Store CHAR C to address A |
+| w@        | (A--W)       | W: the WORD at address A |
+| w!        | (W A--)      | Store WORD W to address A |
 | +         | (X Y--N)     | N: X + Y |
 | -         | (X Y--N)     | N: X - Y |
 | *         | (X Y--N)     | N: X * Y |
@@ -128,34 +127,37 @@ The opcodes/primitives:
 | <         | (X Y--F)     | F: 1 if (X < Y), else 0 |
 | =         | (X Y--F)     | F: 1 if (X = Y), else 0 |
 | >         | (X Y--F)     | F: 1 if (X > Y), else 0 |
+| exit      | (--)         | EXIT word |
 | 0=        | (N--F)       | F: 1 if (N = 0), else 0 |
 | and       | (X Y--N)     | N: X AND Y |
 | or        | (X Y--N)     | N: X OR  Y |
 | xor       | (X Y--N)     | N: X XOR Y |
 | com       | (X--Y)       | Y: X with all bits flipped (complement) |
-| for       | (N--)        | Begin a FOR loop with bounds 0 and N. |
+| for       | (N--)        | Begin a FOR loop with bounds 0 and N-1. |
 | i         | (--I)        | I: Current FOR loop index. |
 | next      | (--)         | Increment I. If (I < N), start loop again, else exit. |
 | >r        | (N--)        | Move TOS to the return stack |
-| r@        | (--N)        | N: return stack TOS |
-| r@+       | (--N)        | N: return stack TOS, then increment it |
-| r@-       | (--N)        | N: return stack TOS, then decrement it |
-| r!        | (N--)        | Set return stack TOS to N |
-| r>        | (--N)        | Move return TOS to the stack |
-| rdrop     | (N--)        | Drop return stack TOS |
-| >t        | (N--N)       | Move TOS to the T stack |
+| r!        | (N--)        | Set R-TOS to N |
+| r@        | (--N)        | N: R-TOS |
+| r@+       | (--N)        | N: R-TOS, then increment it |
+| r@-       | (--N)        | N: R-TOS, then decrement it |
+| r>        | (--N)        | Move R-TOS to the stack |
+| rdrop     | (--)         | Drop R-TOS |
+| >t        | (N--)        | Move TOS to the T stack |
+| t!        | (N--)        | Set T-TOS to N |
 | t@        | (--N)        | N: T-TOS |
 | t@+       | (--N)        | N: T-TOS, then increment T-TOS |
 | t@-       | (--N)        | N: T-TOS, then decrement T-TOS |
-| t!        | (N--)        | Set T-TOS to N |
-| t>        | (N--N)       | Move T-TOS to the stack |
-| >a        | (N--N)       | Move TOS to the A stack |
+| t>        | (--N)        | Move T-TOS to the stack |
+| >a        | (N--)        | Move TOS to the A stack |
 | a!        | (N--)        | Set A-TOS to N |
 | a@        | (--N)        | N: A-TOS |
 | a@+       | (--N)        | N: A-TOS, then increment A-TOS |
 | a@-       | (--N)        | N: A-TOS, then decrement A-TOS |
 | a>        | (--N)        | Move A-TOS to the stack |
 | emit      | (C--)        | Output char C |
+| key       | (--C)        | C: next key from the keyboard |
+| ?key      | (--F)        | F: 1 if char is available, else 0 |
 | :         | (--)         | Create a new word, set STATE=1 |
 | ;         | (--)         | Compile EXIT, set STATE=0 |
 | outer     | (S--)        | Parse S using the outer interpreter |
@@ -168,11 +170,11 @@ The opcodes/primitives:
 | fread     | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars read |
 | fwrite    | (A N FH--X)  | A: Buffer, N: Size, FH: File Handle, X: num chars written |
 | fseek     | (N FH--)     | Set current file offset to N for file FH |
+| fdelete   | (NM--)       | Delete file FN |
 | system    | (S--)        | S: String to send to `system()` |
 | s-cpy     | (D S--D)     | Copy string S to D |
 | s-eqi     | (D S--F)     | String compare F: 1 if S and D are the same (case-insensitive) |
 | s-len     | (S--N)       | N: length of string S |
-| fill      | (A B N--)    | Fill N bytes with B starting at address A |
 | bye       | (--)         | Exit c5 |
 
 ## c5 Built-in words

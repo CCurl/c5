@@ -28,7 +28,7 @@ const -ha-
 : if0 (jmpnz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
-: a+  a@ 1+ a! ; inline
+: a+  a@+ drop ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
 : @a- a@- c@ ; inline
@@ -73,13 +73,13 @@ const -ha-
 : abs dup 0 < if negate then ;
 
 : #neg 0 >a dup 0 < if negate a+ then ;
-: #c t@ 1- dup t! c! ;
-: #n '0' + dup '9' > if 7 + then #c ;
-: <# #neg last 32 - >t 0 t@ c! ;
-: #. '.' #c ;
-: # base @ /mod swap #n ;
-: #s begin # -while drop ;
-: #> a@ if '-' #c then t> adrop ;
+: #c ( c-- )  t@- 1- c! ;
+: #n ( n-- )  '0' + dup '9' > if 7 + then #c ;
+: <# ( n--n ) #neg last 32 - >t 0 t@ c! ;
+: #. ( -- )   '.' #c ;
+: #  ( n1--n2 ) base @ /mod swap #n ;
+: #s ( n-- )  begin # -while drop ;
+: #> ( --s )  a@ if '-' #c then t> adrop ;
 
 : (.)  ( n-- ) <# #s #> ztype ;
 : .  ( n-- ) (.) space ;
@@ -121,15 +121,18 @@ const -ha-
       for i 1+ cells dstk + @ . next
    then rpar ;
 
-: dict-end dict dict-sz + 1- ;
+dict dict-sz + 1- const dict-end
 : de>xt    @ ;
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 mod if0 cr exit then tab ;
-: words last >a 1 >t begin
-    a@ .de-word a@ de-sz + a!
-    a@ dict-end < while lpar t> 1- . ." words)" adrop ;
+: .de-word de>name ztype t@+ 10 > if 0 t! cr exit then tab ;
+: words last >a 1 >t 0 >r begin
+     a@ de>len 7 > if t@+ drop then
+     a@ .de-word a@ de-sz + a!
+     r@ 1+ r!
+     a@ dict-end < while
+  while lpar r> . ." words)" atdrop ;
 
 ( memory )
 : fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
@@ -167,20 +170,21 @@ const -ha-
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( blocks )
-: block-max   499 ; inline
-: block-sz   2000 ; inline
-: disk-sz block-max 1+ block-sz * ;
-: disk vars vars-sz + disk-sz - ;
-: ->block   ( n--a )  block-max min block-sz * disk + ;
-: disk-read " disk.c5" " rb" fopen ?dup
-   if >a disk disk-sz a@ fread  a> fclose then ;
-: disk-flush " disk.c5" " wb" fopen ?dup
-   if >a disk disk-sz a@ fwrite  a> fclose then ;
-disk-read
-
 cell var blk
 : rows 25 ; inline
 : cols 80 ; inline
+: block-max  499 ; inline
+rows cols * const block-sz
+block-max 1+ block-sz * const disk-sz
+vars vars-sz + disk-sz - const disk
+: ->block   ( n--a )  block-max min block-sz * disk + ;
+: fopen-r " rb" fopen ;
+: fopen-w " wb" fopen ;
+: disk-read " disk.c5" fopen-r ?dup
+   if >a disk disk-sz a@ fread  a> fclose then ;
+: disk-flush " disk.c5" fopen-w ?dup
+   if >a disk disk-sz a@ fwrite  a> fclose then ;
+disk-read
 
 ( a simple block editor )
 block-sz var ed-block
@@ -218,7 +222,7 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
    repl? if yellow ."  -replace-" white then
    ins?  if purple ."  -insert-"  white then
-   space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
+   space rc->pos c@ lpar '#' emit (.) rpar clr-eol ;
 : printable? ( c--f ) dup  31 >  swap 127 < and ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
@@ -312,7 +316,6 @@ marker
 
 ( temp for testing )
 vhere const wd 32 allot
-vhere const wd-in cell allot
 
 : skip-ws ( p1--p2 ) 
    begin
