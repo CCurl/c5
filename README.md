@@ -22,7 +22,7 @@ make
 
 or
 
-# for 64 bit:
+# for 32 bit:
 ARCH=32 make
 ```
 
