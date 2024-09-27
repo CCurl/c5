@@ -73,10 +73,10 @@ const -ha-
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
 
-: #neg 0 >a dup 0 < if negate a+ then ;
+: #neg ( n--n' ) 0 >a dup 0 < if negate a+ then ;
 : #c ( c-- )  t@- 1- c! ;
 : #n ( n-- )  '0' + dup '9' > if 7 + then #c ;
-: <# ( n--n ) #neg last 32 - >t 0 t@ c! ;
+: <# ( n--n ) #neg last 32 - >t 0 !t ;
 : #. ( -- )   '.' #c ;
 : #  ( n1--n2 ) base @ /mod swap #n ;
 : #s ( n-- )  begin # -while drop ;
