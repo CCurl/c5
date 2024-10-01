@@ -28,9 +28,9 @@ char *toIn, wd[32];
 	X(OVER,    "over",      0, t=NOS; push(t); ) \
 	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
 	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
+	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
 	X(WFET,    "w@",        0, TOS = fetchWord((byte*)TOS); ) \
 	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord((byte*)t, n); ) \
-	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
 	X(CSTO,    "c!",        0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
 	X(ADD,     "+",         0, t=pop(); TOS += t; ) \
 	X(SUB,     "-",         0, t=pop(); TOS -= t; ) \
@@ -85,6 +85,7 @@ char *toIn, wd[32];
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
 	X(FSEEK,   "fseek",     0, t=pop(); n=pop(); fSeek(t,n); ) \
+	X(FDEL,    "fdelete",   0, TOS = fDelete((char*)TOS); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",     0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
