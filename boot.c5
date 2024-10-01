@@ -114,6 +114,7 @@ const -ha-
 : max ( a b--c ) 2dup < if swap then drop ;
 : vc, vhere c! 1 allot ;
 : v, vhere ! cell allot ;
+: unloop (lsp) @ 0 max (lsp) ! ;
 
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
