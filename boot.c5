@@ -28,6 +28,15 @@ const -ha-
 : if0 (jmpnz) c, here 0 , ; immediate
 : then here swap ! ; immediate
 
+: #neg dup 0 < dup >a if com 1+ then ;
+: #c  t@- 1- c! ;
+: #n  '0' + dup '9' > if 7 + then #c ;
+: <#  #neg last 32 - >t 0 t@ c! ;
+: #.  '.' #c ;
+: #   base @ /mod swap #n ;
+: #s  begin # -while drop ;
+: #>  a> if '-' #c then t> ;
+
 : a+  a@+ drop ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
@@ -72,15 +81,6 @@ const -ha-
 : space bl emit ; inline
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
-
-: #neg ( n--n' ) 0 >a dup 0 < if negate a+ then ;
-: #c ( c-- )  t@- 1- c! ;
-: #n ( n-- )  '0' + dup '9' > if 7 + then #c ;
-: <# ( n--n ) #neg last 32 - >t 0 !t ;
-: #. ( -- )   '.' #c ;
-: #  ( n1--n2 ) base @ /mod swap #n ;
-: #s ( n-- )  begin # -while drop ;
-: #> ( --s )  a@ if '-' #c then t> adrop ;
 
 : (.)  ( n-- ) <# #s #> ztype ;
 : .  ( n-- ) (.) space ;
@@ -136,11 +136,11 @@ dict dict-sz + 1- const dict-end
   while lpar r> . ." words)" atdrop ;
 
 ( memory )
-: fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
-: cmove ( src dst n-- ) >r >t >a
+: fill ( addr num ch-- ) >t >r >a  r> for t@ !a+ next atdrop ;
+: cmove ( src dst num-- ) >r >t >a
     r> ?dup if for @a+ !t+ next then
     atdrop ;
-: cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
+: cmove> ( src dst num-- ) >r  r@ + >t  r@ + >a
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
 
@@ -179,6 +179,9 @@ rows cols * const block-sz
 block-max 1+ block-sz * const disk-sz
 vars vars-sz + disk-sz - const disk
 : ->block   ( n--a )  block-max min block-sz * disk + ;
+: blk-cp  ( f t-- ) swap ->block swap ->block block-sz cmove ;
+: blk-clr ( blk-- ) ->block block-sz 0 fill ;
+: blk-mv  ( f t-- ) over swap blk-cp blk-clr ;
 : fopen-r " rb" fopen ;
 : fopen-w " wb" fopen ;
 : disk-read " disk.c5" fopen-r ?dup
@@ -252,7 +255,10 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
       begin @t- !a- t@ r@ < until
       atdrop rdrop
    then clr-line ;
-: del-line  row@ rows < if
+cols 1+ var yanked
+: yank-line yanked >a 0 row@ cr->pos >t cols for @t+ !a+ next atdrop ;
+: put-line  yanked >a 0 row@ cr->pos >t cols for @a+ !t+ next atdrop dirty! ;
+: del-line  yank-line row@ rows < if
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
       begin @a+ !t+  a@ r@ > until
       atdrop rdrop
@@ -263,10 +269,11 @@ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
    p " q"  s-eqi if 99 mode! then
    p " q!" s-eqi if 99 mode! then
    p " wq" s-eqi if 99 mode! then
+   p c@ '!' = if p 1+ outer then
    p " w"  s-eqi if clean then ;
 
-: case ( ch -- ) find drop swap vc, v, ;   ( case-table entry - single word )
-: case! ( ch-- ) vc, here v, 1 state ! ;   ( case-table entry - code )
+: case ( ch -- ) find drop swap vc, v, ;  ( case-table entry - single word )
+: case! ( ch-- ) vc, here v, 1 state ! ;  ( case-table entry - code )
 
 ( VI-like commands )
 vhere const ed-cases
@@ -277,7 +284,8 @@ vhere const ed-cases
 'R'  case  ->repl            'i'  case  ->ins
 'O'  case  ins-line          'D'  case  del-line
 '+'  case  next-pg           '-'  case  prev-pg
-'r'  case  repl-one
+'r'  case  repl-one          'Y'  case  yank-line
+'P'  case  put-line
 27   case  ->norm            ':'  case  ed-cmd
 13   case! mv-down 0 col! ;  'X'  case! mv-left del-ch ;
 '_'  case! 0 col! ;          'o'  case! mv-down ins-line ;
@@ -306,7 +314,7 @@ vhere const ed-cases
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.c5" " rb" fopen ?dup if >a
       vars 10000 + >t 
-      0 t@ 25000 fill 
+      t@ 25000 0 fill 
       t@ 25000 a@ fread drop a> fclose
       t> >in !
    then ;
@@ -317,11 +325,11 @@ vhere const ed-cases
    for
       t@ if0 cr a@ .hex ." : " then
       @a+ .hex
-      t@+ $0e = if ."    " .ascii 0 t! then
-   next drop atdrop ;
+      t@+ $0f = if ."    " .ascii 0 t! then
+   next atdrop ;
 
-( fg: forget-one )
-: fg last dup de>xt (ha) ! de-sz + (la) ! ;
+( fg-1: forget-one )
+: fg-1 last dup de>xt (ha) ! de-sz + (la) ! ;
 
 ( marker / forget )
 cell var fg-h
