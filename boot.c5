@@ -190,6 +190,25 @@ vars vars-sz + disk-sz - const disk
    if >a disk disk-sz a@ fwrite  a> fclose then ;
 disk-read
 
+( vkey )
+#256  #75 or const key-left  ( vt100: 27 91 68 )
+#256  #77 or const key-right ( vt100: 27 91 67 )
+#256  #72 or const key-up    ( vt100: 27 91 65 )
+#256  #80 or const key-down  ( vt100: 27 91 66 )
+#256  #71 or const key-home  ( vt100: 27 91 72 )
+#256  #79 or const key-end   ( vt100: 27 91 70 )
+#256  #82 or const key-ins   ( vt100: 27 91 50 126 )
+#256  #83 or const key-del   ( vt100: 27 91 51 126 )
+#256  #73 or const key-pgup  ( vt100: 27 91 53 126 )
+#256  #81 or const key-pgdn  ( vt100: 27 91 54 126 )
+#256 #119 or const key-chome ( vt100: 27 91 ?? ??? )
+#256 #117 or const key-cend  ( vt100: 27 91 ?? ??? )
+
+: win-key ( --k ) key #256 or ;
+: vt-key ( --k ) 27 ( TODO! ) ;
+: vkey ( --k ) key dup 224 = if drop win-key exit then
+   dup 27 = if drop vt-key exit then ;
+
 ( accept )
 : printable? ( c--f ) dup 31 > swap 127 < and ;
 : bs 8 emit ; inline
@@ -272,10 +291,28 @@ cols 1+ var yanked
    p c@ '!' = if p 1+ outer then
    p " w"  s-eqi if clean then ;
 
-: case ( ch -- ) find drop swap vc, v, ;  ( case-table entry - single word )
-: case! ( ch-- ) vc, here v, 1 state ! ;  ( case-table entry - code )
+: case ( ch -- ) find drop swap v, v, ;  ( case-table entry - single word )
+: case! ( ch-- ) v, here v, 1 state ! ;  ( case-table entry - code )
 
 ( VI-like commands )
+vhere const ed-ctrl-cases
+key-left  case  mv-left
+key-right case  mv-right
+key-up    case  mv-up
+key-down  case  mv-down
+key-home  case! 0 col! ;
+key-end   case! cols 1- col! ;
+key-ins   case  ->ins
+key-del   case  del-ch
+key-pgup  case  prev-pg
+key-pgdn  case  next-pg
+key-chome case! 0 dup col! row! ;
+key-cend  case! 0 dup col! rows 1- row! ;
+13        case! mv-down 0 col! ;
+27        case  ->norm
+ 3        case! 99 mode! ;
+0 v, 0 v, ( end )
+
 vhere const ed-cases
 'h'  case  mv-left           'j'  case  mv-down  
 'k'  case  mv-up             'l'  case  mv-right
@@ -285,27 +322,25 @@ vhere const ed-cases
 'O'  case  ins-line          'D'  case  del-line
 '+'  case  next-pg           '-'  case  prev-pg
 'r'  case  repl-one          'Y'  case  yank-line
-'P'  case  put-line
-27   case  ->norm            ':'  case  ed-cmd
-13   case! mv-down 0 col! ;  'X'  case! mv-left del-ch ;
+'P'  case  put-line          ':'  case  ed-cmd
+'X'  case! mv-left del-ch ;
 '_'  case! 0 col! ;          'o'  case! mv-down ins-line ;
- 3   case! 99 mode! ;
-0 vc, 0 v, ( end )
+0 v, 0 v, ( end )
 
 ( switch: case-table process )
 : switch ( tbl-- )
    >t begin
-      @t if0 tdrop exit then
-      @t+ a@ = if  t> @ >r exit then
+      t@ @ if0 tdrop exit then
+      t@ dup cell+ t! @ a@ = if  t> @ >r exit then
       t@ cell+ t!
    again tdrop ;
 
 : process-key ( -- )
-   a@ 27 = if ->norm exit then
+   a@ 32 < a@ 126 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
    ed-cases switch ;
-: ed-loop begin show key >a process-key adrop quit? until ;
+: ed-loop begin show vkey >a process-key adrop quit? until ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
