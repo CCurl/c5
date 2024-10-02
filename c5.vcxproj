@@ -144,7 +144,7 @@
     <None Include="LICENSE" />
     <None Include="makefile" />
     <None Include="README.md" />
-    <None Include="boot.c5" />
+    <None Include="boot.f" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="c5.c" />
