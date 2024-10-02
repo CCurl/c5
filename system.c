@@ -88,7 +88,7 @@ void boot(const char *fn) {
 }
 
 int main(int argc, char *argv[]) {
-	Init();
+	C5Init();
 	boot((1<argc) ? argv[1] : 0);
 	while (1) { repl(); }
 	return 0;

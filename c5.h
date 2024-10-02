@@ -13,7 +13,7 @@
 #define VERSION     20241001
 
 #define MAX_CODE    0x00FFFF
-#define MAX_VARS    1999999
+#define MAX_VARS    (2*1024*1024)-1
 #define MAX_DICT    2500*sizeof(DE_T)
 #define STK_SZ            63
 #define LSTK_SZ           60
@@ -44,7 +44,9 @@ typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 // These are defined by c5.cpp
 extern void inner(cell start);
 extern int  outer(const char *src);
-extern void Init();
+extern void C5Init();
+extern void push(cell val);
+extern cell pop();
 extern byte vars[];
 extern cell state;
 extern cell outputFp;

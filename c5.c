@@ -318,7 +318,7 @@ void baseSys() {
 	}
 }
 
-void Init() {
+void C5Init() {
 	base       = 10;
 	here       = &code[0];
 	vhere      = &vars[0];
