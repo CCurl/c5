@@ -63,13 +63,13 @@ char *toIn, wd[32];
 	X(TAT,     "t@",        0, push(tstk[tsp]); ) \
 	X(TATI,    "t@+",       0, push(tstk[tsp]++); ) \
 	X(TATD,    "t@-",       0, push(tstk[tsp]--); ) \
-	X(TFROM,   "t>",        0, push(0<tsp ? tstk[tsp--]: 0); ) \
+	X(TFROM,   "t>",        0, push((0<tsp) ? tstk[tsp--]: 0); ) \
 	X(ATO,     ">a",        0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
 	X(ASET,    "a!",        0, astk[asp]=pop(); ) \
 	X(AGET,    "a@",        0, push(astk[asp]); ) \
 	X(AGETI,   "a@+",       0, push(astk[asp]++); ) \
 	X(AGETD,   "a@-",       0, push(astk[asp]--); ) \
-	X(AFROM,   "a>",        0, push(0<asp ? astk[asp--]: 0); ) \
+	X(AFROM,   "a>",        0, push((0<asp) ? astk[asp--]: 0); ) \
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \

@@ -45,10 +45,11 @@ typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 extern void inner(cell start);
 extern int  outer(const char *src);
 extern void Init();
+extern byte vars[];
+extern cell state;
+extern cell outputFp;
 
 // c5.c needs these to be defined
-extern cell state, outputFp;
-extern byte vars[];
 extern void zType(const char *str);
 extern void emit(const char ch);
 extern void ttyMode(int isRaw);
