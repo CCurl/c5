@@ -369,7 +369,7 @@ vhere const ed-cases
 
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.c5" " rb" fopen ?dup if >a
+   " boot.f" " rb" fopen ?dup if >a
       vars 10000 + >t 
       t@ 25000 0 fill 
       t@ 25000 a@ fread drop a> fclose
