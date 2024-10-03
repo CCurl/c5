@@ -26,9 +26,9 @@ void ttyMode(int isRaw) {
 	}
 	if (isRaw != curMode) {
 		if (isRaw) {
-			tcsetattr( STDIN_FILENO, TCSANOW, &rawt);
+			tcsetattr(STDIN_FILENO, TCSANOW, &rawt);
 		} else {
-			tcsetattr( STDIN_FILENO, TCSANOW, &origt);
+			tcsetattr(STDIN_FILENO, TCSANOW, &origt);
 		}
 		curMode = isRaw;
 	}
