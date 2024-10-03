@@ -21,7 +21,7 @@ void ttyMode(int isRaw) {
 	static int curMode = -1;
 	if (curMode == -1) {
 		curMode = 0;
-		tcgetattr( STDIN_FILENO, &origt);
+		tcgetattr(STDIN_FILENO, &origt);
 		cfmakeraw(&rawt);
 	}
 	if (isRaw != curMode) {
