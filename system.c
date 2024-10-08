@@ -75,7 +75,7 @@ void repl() {
 }
 
 void boot(const char *fn) {
-	if (!fn) { fn = "boot.f"; }
+	if (!fn) { fn = "boot.fth"; }
 	cell fp = fOpen(fn, (cell)"rb");
 	if (fp) {
 		fRead((cell)&vars[10000], 99999, fp);
@@ -83,7 +83,7 @@ void boot(const char *fn) {
 		outer((char*)&vars[10000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.f'\n");
+		zType("If no filename is provided, the default is 'boot.fth'\n");
 	}
 }
 
