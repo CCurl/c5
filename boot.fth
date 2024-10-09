@@ -419,8 +419,8 @@ cell var fg-v
 : marker here fg-h ! last fg-l ! vhere fg-v ! ;
 : forget fg-h @ (ha) ! fg-l @ (la) ! fg-v @ (vha) ! ;
 
-: t0 '.' hold ;
-: .ver  green ." c5 v" version <# # # t0 # # t0 #s #> ztype white cr ;
+: #. '.' hold ;
+: .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
 .ver ." hello"
 
 marker
