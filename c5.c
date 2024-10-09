@@ -20,6 +20,7 @@ cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
 char *toIn, wd[32];
+DE_T tmpWords[10];
 
 #define PRIMS \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -141,8 +142,6 @@ int isTempWord(const char *w) {
 	if ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0)) { return w[1]-'0'+1; }
 	return 0;
 }
-
-DE_T tmpWords[10];
 
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
