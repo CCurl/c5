@@ -26,16 +26,15 @@ const -ha-
 : if (jmpz)   c, here 0 , ; immediate
 : -if (njmpz) c, here 0 , ; immediate
 : if0 (jmpnz) c, here 0 , ; immediate
+: else (jmp)  c, here swap 0 , here swap ! ; immediate
 : then here swap ! ; immediate
 
 : #neg dup 0 < dup >a if com 1+ then ;
-: #c  t@- 1- c! ;
-: #n  '0' + dup '9' > if 7 + then #c ;
 : <#  #neg last 32 - >t 0 t@ c! ;
-: #.  '.' #c ;
-: #   base @ /mod swap #n ;
+: hold t@- 1- c! ;
+: #   base @ /mod swap '0' + dup '9' > if 7 + then hold ;
 : #s  begin # -while drop ;
-: #>  a> if '-' #c then t> ;
+: #>  a> if '-' hold then t> ;
 
 : a+  a@+ drop ; inline
 : @a  a@  c@ ; inline
@@ -115,7 +114,10 @@ const -ha-
 : vc, vhere c! 1 allot ;
 : v, vhere ! cell allot ;
 : unloop (lsp) @ 0 max (lsp) ! ;
+: 0sp  0 (dsp) ! ;
+: 0rsp 0 (rsp) ! ;
 
+( .s )
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
 : rpar ')' emit ; inline
@@ -123,18 +125,21 @@ const -ha-
       for i 1+ cells dstk + @ . next
    then rpar ;
 
+( words )
 dict dict-sz + 1- const dict-end
 : de>xt    @ ;
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 > if 0 t! cr exit then tab ;
+: .word ( de-- ) de>name ztype ;
+: .de-word ( de-- ) .word t@+ 10 > if 0 t! cr exit then tab ;
 : words last >a 1 >t 0 >r begin
      a@ de>len 7 > if t@+ drop then
      a@ .de-word a@ de-sz + a!
      r@ 1+ r!
-     a@ dict-end < while
+     a@ dict-end <
   while lpar r> . ." words)" atdrop ;
+: words-n ( n-- ) last swap 1 >t for dup .de-word de-sz + next drop tdrop ;
 
 ( memory )
 : fill ( addr num ch-- ) >t >r >a  r> for t@ !a+ next atdrop ;
@@ -155,7 +160,8 @@ dict dict-sz + 1- const dict-end
       @a @t+ = if0 a> t> = exit then
       a@+ c@ if0 atdrop 1 exit then
    again ;
-: p ( --a ) vhere $100 + ;
+: p  ( --a ) vhere $100 + ;
+: p2 ( --a ) vhere $200 + ;
 
 ( screen )
 : csi       ( -- )    27 emit '[' emit ;
@@ -176,6 +182,10 @@ dict dict-sz + 1- const dict-end
 : cyan   36 fg ;      : grey   37 fg ;
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
+( files )
+: fopen-r ( nm--fh ) " rb" fopen ;
+: fopen-w ( nm--fh ) " wb" fopen ;
+
 ( blocks )
 cell var blk
 : rows 25 ; inline
@@ -184,12 +194,24 @@ cell var blk
 rows cols * const block-sz
 block-max 1+ block-sz * const disk-sz
 vars vars-sz + disk-sz - const disk
+
+( blocks )
 : ->block   ( n--a )  block-max min block-sz * disk + ;
 : blk-cp  ( f t-- ) swap ->block swap ->block block-sz cmove ;
 : blk-clr ( blk-- ) ->block block-sz 0 fill ;
 : blk-mv  ( f t-- ) over swap blk-cp blk-clr ;
-: fopen-r " rb" fopen ;
-: fopen-w " wb" fopen ;
+
+: blk-fn ( blk--fn ) >t p " block-" s-cpy t> <# # # #s #> s-cat " .fth" s-cat ;
+: blk-read ( blkNum buf bufSize--numRead ) >t >a  a@ t@ 0 fill
+    blk-fn fopen-r ?dup if >r a@ t@ r@ fread  r> fclose else 0 then atdrop ;
+: blk-write ( blkNum buf bufSize--numWritten ) >t >a
+    blk-fn fopen-w ?dup if >r a@ t@ r@ fwrite r> fclose else 0 then atdrop ;
+: blk-rm  ( blkNum-- ) exit blk-fn fdelete ;
+: blk-cp2 ( from to--sz ) >t p2 25000 blk-read t> swap p2 swap blk-write ;
+: blk-mv2 ( from to-- ) over swap blk-cp2 drop blk-rm ;
+: blk-ins ( blkNum stop-- ) 1+ >t >a
+   begin t@- t@ swap blk-mv2 t@ a@ > while tdrop a> blk-rm ;
+
 : disk-read " disk.c5" fopen-r ?dup
    if >a disk disk-sz a@ fread  a> fclose then ;
 : disk-flush " disk.c5" fopen-w ?dup
@@ -369,7 +391,7 @@ vhere const ed-cases
 
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.f" " rb" fopen ?dup if >a
+   " boot.fth" " rb" fopen ?dup if >a
       vars 10000 + >t 
       t@ 25000 0 fill 
       t@ 25000 a@ fread drop a> fclose
@@ -395,7 +417,8 @@ cell var fg-v
 : marker here fg-h ! last fg-l ! vhere fg-v ! ;
 : forget fg-h @ (ha) ! fg-l @ (la) ! fg-v @ (vha) ! ;
 
-: .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
+: t0 '.' hold ;
+: .ver  green ." c5 v" version <# # # t0 # # t0 #s #> ztype white cr ;
 .ver ." hello"
 
 marker

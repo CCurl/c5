@@ -137,8 +137,17 @@ int nextWord() {
 	return len;
 }
 
+int isTempWord(const char *w) {
+	if ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0)) { return w[1]-'0'+1; }
+	return 0;
+}
+
+DE_T tmpWords[10];
+
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	int tw = isTempWord(w);
+	if (tw) { tmpWords[tw-1].xt=(cell)here; return &tmpWords[tw-1]; }
 	int ln = strLen(w);
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
@@ -152,6 +161,8 @@ DE_T *addWord(const char *w) {
 
 DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	int tw = isTempWord(w);
+	if (tw) { return &tmpWords[tw-1]; }
 	int len = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {

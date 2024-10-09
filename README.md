@@ -4,9 +4,9 @@ c5 is comprised of 4 files:
 - c5.c      - The VM
 - c5.h      - Definitions
 - system.c  - System-specific support and `main()` function
-- boot.f    - The Forth bootstrap source code
+- boot.fth  - The Forth bootstrap source code
 
-**Note:** The default boot.f is just what I use for interactive use.<br/>
+**Note:** The default boot.fth is just what I use for interactive use.<br/>
 You are 100% free to modify it in any way you desire for your own purposes.<br/>
 
 ## Building c5
@@ -40,7 +40,7 @@ clang -m64 -O3 -o c5 *.c
 
 When c5 starts, it looks for a filename as the 1st and only argument.<br/>
 If a filename is found, and it can open that file, then that becomes the source file.<br/>
-If no filename is given, c5 tries to open and use `boot.f` as the source file.<br/>
+If no filename is given, c5 tries to open and use `boot.fth` as the source file.<br/>
 
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
@@ -193,7 +193,7 @@ Stack effect notation conventions:
 There are very few default words in addition to the above primitives.<br/>
 This is because of a desire to give the programmer as much freedom as possible.<br/>
 Any system desired can be built from the primitives and the source file.<br/>
-The default source file, `boot.f` is simply the system I start with.<br/>
+The default source file, `boot.fth` is simply the system I start with.<br/>
 
 | WORD      | STACK        | DESCRIPTION |
 |:--        |:--           |:-- |
