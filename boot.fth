@@ -101,6 +101,8 @@ const -ha-
 : 2+ 1+ 1+ ; inline
 : 2* dup + ; inline
 : 2/ 2 / ; inline
+: lshift ( num bits-- ) for 2* next ; inline
+: rshift ( num bits-- ) for 2/ next ; inline
 : 2dup over over ; inline
 : 2drop drop drop ; inline
 : mod /mod drop ; inline
@@ -113,7 +115,7 @@ const -ha-
 : max ( a b--c ) 2dup < if swap then drop ;
 : vc, vhere c! 1 allot ;
 : v, vhere ! cell allot ;
-: unloop (lsp) @ 0 max (lsp) ! ;
+: unloop (lsp) @ 3 - 0 max (lsp) ! ;
 : 0sp  0 (dsp) ! ;
 : 0rsp 0 (rsp) ! ;
 
