@@ -2,10 +2,12 @@
 
 #ifdef IS_WINDOWS
 
+#include <windows.h>
 #include <conio.h>
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
+void ms(cell sleepForMS) { Sleep(sleepForMS); }
 
 #endif
 
