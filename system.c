@@ -15,6 +15,7 @@ void ttyMode(int isRaw) {}
 #include <termios.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 
 void ttyMode(int isRaw) {
 	static struct termios origt, rawt;
@@ -51,6 +52,14 @@ int key() {
 	int x = fgetc(stdin);
 	// ttyMode(0);
 	return x;
+}
+void ms(cell sleepForMS) {
+	while (sleepForMS > 1000) {
+		usleep(500000);
+		usleep(500000);
+		sleepForMS -= 1000;
+	}
+	if (sleepForMS > 0) { usleep(sleepForMS*1000); }
 }
 
 #endif // Linux, OpenBSD, FreeBSD
