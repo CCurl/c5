@@ -190,8 +190,8 @@ dict dict-sz + 1- const dict-end
 
 ( blocks )
 cell var blk
-: rows 25 ; inline
-: cols 80 ; inline
+: rows 23 ; inline
+: cols 89 ; inline
 : block-max  499 ; inline
 rows cols * const block-sz
 block-max 1+ block-sz * const disk-sz
