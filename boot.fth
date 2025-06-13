@@ -18,14 +18,15 @@ const -ha-
 
 : begin here ; immediate
 : while  (jmpnz)  c, , ; immediate
-: -while (njmpnz) c, , ; immediate
 : until  (jmpz)   c, , ; immediate
-: -until (njmpz)  c, , ; immediate
 : again  (jmp)    c, , ; immediate
+: -while (njmpnz) c, , ; immediate
+: -until (njmpz)  c, , ; immediate
 
-: if (jmpz)   c, here 0 , ; immediate
-: -if (njmpz) c, here 0 , ; immediate
-: if0 (jmpnz) c, here 0 , ; immediate
+: if   (jmpz)   c, here 0 , ; immediate
+: if0  (jmpnz)  c, here 0 , ; immediate
+: -if  (njmpz)  c, here 0 , ; immediate
+: -if0 (njmpnz) c, here 0 , ; immediate
 : else (jmp)  c, here swap 0 , here swap ! ; immediate
 : then here swap ! ; immediate
 
