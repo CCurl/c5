@@ -1,12 +1,12 @@
 # c5: A full-featured Forth for Windows and Linux in 4 files
 
 c5 is comprised of 4 files:
-- c5.c      - (The VM)
-- c5.h      - (Definitions)
-- system.c  - (System-specific support)
-- boot.c5   - (The Forth source code)
+- c5.c      - The VM
+- c5.h      - Definitions
+- system.c  - System-specific support and `main()` function
+- boot.fth  - The Forth bootstrap source code
 
-**Note:** The default boot.c5 is just what I use for interactive use.<br/>
+**Note:** The default boot.fth is just what I use for interactive use.<br/>
 You are 100% free to modify it in any way you desire for your own purposes.<br/>
 
 ## Building c5
@@ -40,7 +40,7 @@ clang -m64 -O3 -o c5 *.c
 
 When c5 starts, it looks for a filename as the 1st and only argument.<br/>
 If a filename is found, and it can open that file, then that becomes the source file.<br/>
-If no filename is given, c5 tries to open and use `boot.c5` as the source file.<br/>
+If no filename is given, c5 tries to open and use `boot.fth` as the source file.<br/>
 
 ## CELLs in c5
 A `CELL` is either 32-bits or 64-bits, depending on the target system.
@@ -49,13 +49,24 @@ A `CELL` is either 32-bits or 64-bits, depending on the target system.
 - Windows 64-bit (x64): a CELL is 64-bits.
 - Windows 32-bit (x86): a CELL is 32-bits.
 
+## Embedding c5 into another app
+c5 can easily be embedded into another C/C++ app by including the `c5.c` and `c5.h` files into the project and implementing the functions it depends on.
+
+This is what `system.c` does.
+
+The functions needed by the c5 VM are clearly identified in `c5.h`.
+
+The controlling program calls `C5Init()`, and then `outer(const char *src)` to execute code using the c5 VM.
+
+In this mode, c5 does not look for a "source file".
+
 ## c5 memory areas
 c5 provides 3 memory areas:
-- code (default size: 64k - see `MAX_CODE`)
-- variables (default size: 2 million - see `MAX_VARS`)
+- code (default size: 64kb - see `MAX_CODE`)
+- variables (default size: 2mb - see `MAX_VARS`)
 - dictionary entries (default size: 2500 entries - see `MAX_DICT`)
 
-Built-in words for the memory areas
+### Built-in words for the memory areas
 
 | WORD       | STACK   | DESCRIPTION |
 |:--         |:--      |:--          |
@@ -92,7 +103,7 @@ Stack effect notation conventions:
 | FH        | File handle: 0 means no file |
 | I         | For loop index counter |
 
-The opcodes/primitives:
+### Opcodes/primitives:
 
 | WORD      | STACK        | DESCRIPTION |
 |:--        |:--           |:-- |
@@ -182,7 +193,7 @@ The opcodes/primitives:
 There are very few default words in addition to the above primitives.<br/>
 This is because of a desire to give the programmer as much freedom as possible.<br/>
 Any system desired can be built from the primitives and the source file.<br/>
-The default source file, `boot.c5` is simply the system I start with.<br/>
+The default source file, `boot.fth` is simply the system I start with.<br/>
 
 | WORD      | STACK        | DESCRIPTION |
 |:--        |:--           |:-- |

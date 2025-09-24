@@ -141,10 +141,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="boot.fth" />
     <None Include="LICENSE" />
     <None Include="makefile" />
     <None Include="README.md" />
-    <None Include="boot.c5" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="c5.c" />

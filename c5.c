@@ -20,6 +20,7 @@ cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
 char *toIn, wd[32];
+DE_T tmpWords[10];
 
 #define PRIMS \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -63,13 +64,13 @@ char *toIn, wd[32];
 	X(TAT,     "t@",        0, push(tstk[tsp]); ) \
 	X(TATI,    "t@+",       0, push(tstk[tsp]++); ) \
 	X(TATD,    "t@-",       0, push(tstk[tsp]--); ) \
-	X(TFROM,   "t>",        0, push(0<tsp ? tstk[tsp--]: 0); ) \
+	X(TFROM,   "t>",        0, push((0<tsp) ? tstk[tsp--]: 0); ) \
 	X(ATO,     ">a",        0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
 	X(ASET,    "a!",        0, astk[asp]=pop(); ) \
 	X(AGET,    "a@",        0, push(astk[asp]); ) \
 	X(AGETI,   "a@+",       0, push(astk[asp]++); ) \
 	X(AGETD,   "a@-",       0, push(astk[asp]--); ) \
-	X(AFROM,   "a>",        0, push(0<asp ? astk[asp--]: 0); ) \
+	X(AFROM,   "a>",        0, push((0<asp) ? astk[asp--]: 0); ) \
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \
@@ -79,6 +80,7 @@ char *toIn, wd[32];
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
+	X(MS,      "ms",        0, ms(pop()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
@@ -137,8 +139,15 @@ int nextWord() {
 	return len;
 }
 
+int isTempWord(const char *w) {
+	if ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0)) { return w[1]-'0'+1; }
+	return 0;
+}
+
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	int tw = isTempWord(w);
+	if (tw) { tmpWords[tw-1].xt=(cell)here; return &tmpWords[tw-1]; }
 	int ln = strLen(w);
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
@@ -152,6 +161,8 @@ DE_T *addWord(const char *w) {
 
 DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	int tw = isTempWord(w);
+	if (tw) { return &tmpWords[tw-1]; }
 	int len = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
@@ -318,7 +329,7 @@ void baseSys() {
 	}
 }
 
-void Init() {
+void C5Init() {
 	base       = 10;
 	here       = &code[0];
 	vhere      = &vars[0];

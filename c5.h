@@ -10,10 +10,10 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20241001
+#define VERSION     20241015
 
 #define MAX_CODE    0x00FFFF
-#define MAX_VARS    1999999
+#define MAX_VARS    (2*1024*1024)-1
 #define MAX_DICT    2500*sizeof(DE_T)
 #define STK_SZ            63
 #define LSTK_SZ           60
@@ -44,17 +44,21 @@ typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 // These are defined by c5.cpp
 extern void inner(cell start);
 extern int  outer(const char *src);
-extern void Init();
+extern void C5Init();
+extern void push(cell val);
+extern cell pop();
+extern byte vars[];
+extern cell state;
+extern cell outputFp;
 
 // c5.c needs these to be defined
-extern cell state, outputFp;
-extern byte vars[];
 extern void zType(const char *str);
 extern void emit(const char ch);
 extern void ttyMode(int isRaw);
 extern int  key();
 extern int  qKey();
 extern cell timer();
+extern void ms(cell sleepForMS);
 extern cell fOpen(const char *name, cell mode);
 extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);

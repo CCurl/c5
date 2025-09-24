@@ -2,10 +2,12 @@
 
 #ifdef IS_WINDOWS
 
+#include <windows.h>
 #include <conio.h>
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
+void ms(cell sleepForMS) { Sleep(sleepForMS); }
 
 #endif
 
@@ -15,20 +17,21 @@ void ttyMode(int isRaw) {}
 #include <termios.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 
 void ttyMode(int isRaw) {
 	static struct termios origt, rawt;
 	static int curMode = -1;
 	if (curMode == -1) {
 		curMode = 0;
-		tcgetattr( STDIN_FILENO, &origt);
+		tcgetattr(STDIN_FILENO, &origt);
 		cfmakeraw(&rawt);
 	}
 	if (isRaw != curMode) {
 		if (isRaw) {
-			tcsetattr( STDIN_FILENO, TCSANOW, &rawt);
+			tcsetattr(STDIN_FILENO, TCSANOW, &rawt);
 		} else {
-			tcsetattr( STDIN_FILENO, TCSANOW, &origt);
+			tcsetattr(STDIN_FILENO, TCSANOW, &origt);
 		}
 		curMode = isRaw;
 	}
@@ -51,6 +54,14 @@ int key() {
 	int x = fgetc(stdin);
 	// ttyMode(0);
 	return x;
+}
+void ms(cell sleepForMS) {
+	while (sleepForMS > 1000) {
+		usleep(500000);
+		usleep(500000);
+		sleepForMS -= 1000;
+	}
+	if (sleepForMS > 0) { usleep(sleepForMS*1000); }
 }
 
 #endif // Linux, OpenBSD, FreeBSD
@@ -75,7 +86,7 @@ void repl() {
 }
 
 void boot(const char *fn) {
-	if (!fn) { fn = "boot.c5"; }
+	if (!fn) { fn = "boot.fth"; }
 	cell fp = fOpen(fn, (cell)"rb");
 	if (fp) {
 		fRead((cell)&vars[10000], 99999, fp);
@@ -83,12 +94,12 @@ void boot(const char *fn) {
 		outer((char*)&vars[10000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.c5'\n");
+		zType("If no filename is provided, the default is 'boot.fth'\n");
 	}
 }
 
 int main(int argc, char *argv[]) {
-	Init();
+	C5Init();
 	boot((1<argc) ? argv[1] : 0);
 	while (1) { repl(); }
 	return 0;
