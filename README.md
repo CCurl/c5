@@ -1,5 +1,11 @@
 # c5: A full-featured Forth for Windows and Linux in 4 files
 
+
+## NOTE: C5 is deprecated and will no longer be updated.
+         This repository will be deleted at some point in the future.
+         It is replaced by https://github.com/CCurl/cf instead.
+
+## What is C5?
 c5 is comprised of 4 files:
 - c5.c      - The VM
 - c5.h      - Definitions
